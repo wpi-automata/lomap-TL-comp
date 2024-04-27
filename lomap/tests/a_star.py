@@ -119,7 +119,8 @@ def iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimensi
 
 
 # NODE EXPANSION HELPER FUNCTIONS
-
+# by doing != -1 I can produce a symbol path while still checking for occupancy.
+# Assumption: location with symbol is never occupied
 def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row, max_dimension_col, queue, grid, parent_dict, gx_dict, goal):
 
     row = node[0]
@@ -130,7 +131,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [min_dimension, min_dimension + 1]
         gx = gx_dict.get(str(node))+1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -140,7 +141,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [min_dimension + 1, min_dimension]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -152,7 +153,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
     elif node[0] == max_dimension_row and node[1] == max_dimension_col:
         node_to_add = [max_dimension_row, max_dimension_col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -162,7 +163,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [max_dimension_row - 1, max_dimension_col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -178,7 +179,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
         # adds 1 to the dictionary of g(x) values since any node to be added is 1 manhattan grid away from the
         # node adding it
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -191,7 +192,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [min_dimension, max_dimension_col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -204,7 +205,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [max_dimension_row, min_dimension + 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -214,7 +215,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [max_dimension_row - 1, min_dimension]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -227,7 +228,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col + 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -237,7 +238,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row + 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -247,7 +248,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -260,7 +261,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col + 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -270,7 +271,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row + 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -280,7 +281,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row - 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -294,7 +295,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col + 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -305,7 +306,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -316,7 +317,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row - 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -329,7 +330,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row + 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -339,7 +340,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -349,7 +350,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row - 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -362,7 +363,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
     else:
         node_to_add = [row, col + 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -372,7 +373,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row + 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -382,7 +383,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row, col - 1]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -392,7 +393,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
         node_to_add = [row - 1, col]
         gx = gx_dict.get(str(node)) + 1
-        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != 1 and node_to_add not in visited:
+        if node_to_add not in queue and grid[node_to_add[0]][node_to_add[1]] != -1 and node_to_add not in visited:
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
@@ -420,8 +421,9 @@ def load_map(file_path):
                 goal[1] = int(row[2])
             # load the map
             else:
-                int_row = [int(col) for col in row]
-                grid.append(int_row)
+                parsed_row = [int(col) for col in row]
+                grid.append(parsed_row)
+    print(f"grid: {grid}")
     return grid, start, goal
 
 
@@ -435,9 +437,9 @@ def draw_path(grid, path, title):
     col = len(grid[0])  # map size
     for i in range(row):
         for j in range(col):
-            if grid[i][j]: 
+            if grid[i][j]==-1: 
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='k'))  # obstacle
-            else:          
+            else:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='w'))  # free space
     # Draw path
     for x, y in path:
