@@ -29,50 +29,6 @@ def make_fsa(specs):
         print(aut)
     return aut
 
-
-def construct_fsa():
-    ap = set(['a', 'b']) # set of atomic propositions
-    fsa = Fsa(props=ap, multi=False) # empty FSA with propsitions from `ap`
-
-    # add states
-    fsa.g.add_nodes_from(['s0', 's1', 's2', 's3'])
-
-    # add transitions
-    inputs = set(fsa.bitmap_of_props(value) for value in [set()])
-    fsa.g.add_edge('s0', 's0', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value) for value in [set(['a'])])
-    fsa.g.add_edge('s0', 's1', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value) for value in [set(['b'])])
-    fsa.g.add_edge('s0', 's2', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value) for value in [set(['a', 'b'])])
-    fsa.g.add_edge('s0', 's3', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value) for value in [set(), set(['a'])])
-    fsa.g.add_edge('s1', 's1', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value)
-                 for value in [set(['b']), set(['a', 'b'])])
-    fsa.g.add_edge('s1', 's3', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value) for value in [set(), set(['b'])])
-    fsa.g.add_edge('s2', 's2', attr_dict={'input': inputs})
-
-    inputs = set(fsa.bitmap_of_props(value)
-                 for value in [set(['a']), set(['a', 'b'])])
-    fsa.g.add_edge('s2', 's3', attr_dict={'input': inputs})
-
-    fsa.g.add_edge('s3', 's3', attr_dict={'input': fsa.alphabet})
-
-    # set the initial state
-    fsa.init['s0'] = 1
-
-    # add `s3` to set of final/accepting states
-    fsa.final.add('s3')
-    return fsa
-
 def construct_ts():
     ts = Ts(directed=True, multi=False)
     ts.g = nx.grid_2d_graph(4, 3)
