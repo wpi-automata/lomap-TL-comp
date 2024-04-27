@@ -64,7 +64,31 @@ def main():
         [set(['a', 'b']), set(), set()], #yes
         [set(['b']), set(), set()], #no
         [set(), set(), set(['a']), set()],  #yes
+        [set(), set(), set(['a']), set(['a']), 
+         set(), set(), set(), set(), set(), set(), set(),
+         set(['b']), set(['a'])] #yes, example from LTL map
     ]
+
+    """
+    Word: [set(), set(), set(['a']), set(['a']), 
+          set(), set(), set(), set(), set(), set(), set(),
+          set(['b']), set(['a'])]
+
+    Trajectory that produces word
+
+        "1 1 1 1 1 1 1 1 1 1 1 1\n" \
+        "1 0 0 0 0 0 0 0 0 0 0 1\n" \
+        "1 0 B B B B 0 0 0 0 0 1\n" \
+        "1 0 B A A B 0 0 0 0 0 1\n" \
+        "1 0 B A X X X X X X 0 1\n" \
+        "1 0 B B B B 0 0 0 X 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 X 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 X 0 1\n" \
+        "1 0 0 0 0 0 0 0 A X 0 1\n" \
+        "1 0 0 0 0 0 0 0 A X 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 X X 1\n" \
+        "1 1 1 1 1 1 1 1 1 1 1 1"
+    """
 
     for k, word in enumerate(words):
         print('Input word', k, ':', word)

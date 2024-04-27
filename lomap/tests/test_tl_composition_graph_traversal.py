@@ -1,3 +1,6 @@
+from __future__ import print_function
+
+
 import sys
 import os
 sys.path.append(os.path.abspath(os.getcwd()))
@@ -7,6 +10,9 @@ from TL_GridWorld import TLGridWorld
 from boolean_composition.four_rooms.library import *
 from value_iteration import q_iteration
 from itertools import product
+
+import networkx as nx
+from lomap import Fsa, Ts, ts_times_fsa, ts_times_ts
 
 TL_MAP = "1 1 1 1 1 1 1 1 1 1 1 1\n" \
         "1 0 0 0 0 0 0 0 0 0 0 1\n" \
@@ -27,6 +33,22 @@ env = TLGridWorld(MAP=TL_MAP)
 labels = ['A','B']
 label_regions  = {'A': [(3, 3), (4, 4), (3, 4), (4, 3), (9, 9), (8, 8), (9, 8), (8, 9)],
                   'B': [(2, 2), (3, 2), (4, 2), (5, 2), (2, 3), (2, 4), (2, 5), (3, 5), (4, 5), (5, 5), (5, 3), (5, 4)]}
+
+"""
+        "1 1 1 1 1 1 1 1 1 1 1 1\n" \
+        "1 0 0 0 0 0 0 0 0 0 0 1\n" \
+        "1 0 B B B B 0 0 0 0 0 1\n" \
+        "1 0 B A A B 0 0 0 0 0 1\n" \
+        "1 0 B A A B 0 0 0 0 0 1\n" \
+        "1 0 B B B B 0 0 0 0 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 0 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 0 0 1\n" \
+        "1 0 0 0 0 0 0 0 A A 0 1\n" \
+        "1 0 0 0 0 0 0 0 A A 0 1\n" \
+        "1 0 0 0 0 0 0 0 0 0 0 1\n" \
+        "1 1 1 1 1 1 1 1 1 1 1 1"
+"""
+
 label_map = defaultdict(set)
 for label, region in label_regions.items():
     for state in region:
@@ -43,7 +65,7 @@ EQ_max, _ = q_iteration(env_max)
 EQ_min, _ = q_iteration(env_min)
 P_max = EQ_P(EQ_max)
 V_max = EQ_V(EQ_max)
-env_max.render(P=P_max,V=V_max)
+env_max.render(P=P_max,V=V_max) #Isnt this A and B?
 
 ### Learning base TL task A
 tl_goals = ['A']
@@ -73,3 +95,47 @@ env.render( P=EQ_P(AND(EQ_A,NOT(EQ_B, EQ_max=EQ_max, EQ_min=EQ_min))), V = EQ_V(
 
 # NOT A and B
 env.render( P=EQ_P(AND(EQ_B,NOT(EQ_A, EQ_max=EQ_max, EQ_min=EQ_min))), V = EQ_V(AND(EQ_B,NOT(EQ_A,EQ_max=EQ_max, EQ_min=EQ_min))), title='NOT A and B')
+
+
+def construct_fsa():
+    ap = set(['a', 'b']) # set of atomic propositions
+    fsa = Fsa(props=ap, multi=False) # empty FSA with propsitions from `ap`
+
+    # add states
+    fsa.g.add_nodes_from(['s0', 's1', 's2', 's3'])
+
+    # add transitions
+    inputs = set(fsa.bitmap_of_props(value) for value in [set()])
+    fsa.g.add_edge('s0', 's0', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value) for value in [set(['a'])])
+    fsa.g.add_edge('s0', 's1', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value) for value in [set(['b'])])
+    fsa.g.add_edge('s0', 's2', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value) for value in [set(['a', 'b'])])
+    fsa.g.add_edge('s0', 's3', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value) for value in [set(), set(['a'])])
+    fsa.g.add_edge('s1', 's1', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value)
+                 for value in [set(['b']), set(['a', 'b'])])
+    fsa.g.add_edge('s1', 's3', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value) for value in [set(), set(['b'])])
+    fsa.g.add_edge('s2', 's2', attr_dict={'input': inputs})
+
+    inputs = set(fsa.bitmap_of_props(value)
+                 for value in [set(['a']), set(['a', 'b'])])
+    fsa.g.add_edge('s2', 's3', attr_dict={'input': inputs})
+
+    fsa.g.add_edge('s3', 's3', attr_dict={'input': fsa.alphabet})
+
+    # set the initial state
+    fsa.init['s0'] = 1
+
+    # add `s3` to set of final/accepting states
+    fsa.final.add('s3')
+    return fsa
