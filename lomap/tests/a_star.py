@@ -31,6 +31,7 @@ def astar(grid, start, goal):
     visited = list()
     parent_dict = {}
     path = []
+    symbols_produced = []
     steps = 0
 
     min_dimension = 0
@@ -44,16 +45,17 @@ def astar(grid, start, goal):
     queue.append(start)
     visited.append(start)
 
-    path, steps = iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimension, max_dimension_row, max_dimension_col,
+    path, symbols_produced, steps = iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimension, max_dimension_row, max_dimension_col,
                                      steps)
     if path != []:
         print(f"It takes {steps} steps to find a path using A*")
         path.reverse()
-        return (path, steps)
+        symbols_produced.reverse()
+        return (path, symbols_produced, steps)
 
     else:
         print("No path found")
-        return path, steps
+        return path, symbols_produced, steps
 
 
 def iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimension, max_dimension_row, max_dimension_col, steps):
@@ -95,18 +97,22 @@ def iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimensi
 
         if node == goal:
             path = list()
+            symbols_produced = list()
             path.append(node)
             parent = parent_dict.get(str(node))
+            symbols_produced.append(grid[node[0]][node[1]])
             path.append(parent)
+            symbols_produced.append(grid[parent[0]][parent[1]])
             node = parent
 
             # back track the using the dictonary of parents as links between nodes to find the path
             while node != start:
                 parent = parent_dict.get(str(node))
                 path.append(parent)
+                symbols_produced.append(grid[parent[0]][parent[1]])
                 node = parent
 
-            return path, steps
+            return path, symbols_produced, steps
 
         else:
             previous_node = node
@@ -115,7 +121,7 @@ def iterative_a_star(grid, queue, start, goal, parent_dict, visited, min_dimensi
             # gives it a lesser g(x) value, and the dictionary of each nodes g(x) value
             queue, parent_dict, gx_dict = four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row, max_dimension_col, queue, grid, parent_dict, gx_dict, goal)
 
-    return ([], steps)
+    return ([], [], steps)
 
 
 # NODE EXPANSION HELPER FUNCTIONS
@@ -428,7 +434,7 @@ def load_map(file_path):
 
 
 # Draw final results
-def draw_path(grid, path, title):
+def draw_path(grid, start, goal, path, title):
     # Visualization of the found path using matplotlib
     fig, ax = plt.subplots(1)
     ax.margins()
@@ -460,8 +466,10 @@ if __name__ == "__main__":
     grid, start, goal = load_map('map.csv')
 
     # Search
-    aster_path, aster_steps = astar(grid, start, goal)
+    astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)
+
+    print(f"Symbols produced: {astar_symbols_produced}")
 
     # Show result
-    draw_path(grid, aster_path, 'A*')
+    draw_path(grid, start, goal, astar_path, 'A*')
     plt.show()
