@@ -55,13 +55,7 @@ def is_word_accepted_verbose(fsa, word):
 
 def main():
     fsa = make_fsa(['F a && F !b'])
-    print(f"Automata fsa: {fsa}")
-
-    # fsa2 = construct_fsa()
-    # print(f"Constructed fsa: {fsa2}")
-
-    # fsa = fsa2
-
+    
     print('Is FSA deterministic:', fsa.is_deterministic())
 
     words = [
