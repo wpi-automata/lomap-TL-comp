@@ -439,6 +439,10 @@ def draw_path(grid, path, title):
         for j in range(col):
             if grid[i][j]==-1: 
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='k'))  # obstacle
+            elif grid[i][j]==1:
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='c',facecolor='c'))  # B
+            elif grid[i][j]==2:
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='m',facecolor='m'))  # A
             else:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='w'))  # free space
     # Draw path
