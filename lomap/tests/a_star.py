@@ -3,6 +3,9 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import csv
+import numpy as np
+import random
+
 
 def astar(grid, start, goal):
     '''Return a path found by A* alogirhm
@@ -432,6 +435,38 @@ def load_map(file_path):
     print(f"grid: {grid}")
     return grid, start, goal
 
+#TODO: allow for user to choose dimensions of map
+# Create map with randomized start and goal point, using input of percent empty cells produce no symbols
+def create_map(percent_empty_open, props):
+
+    numerical_props = list(props.keys())
+
+    dim = 12 #width and height of map
+
+    start = [random.randint(1, 10), random.randint(1, 10)]
+    goal = [random.randint(1, 10), random.randint(1, 10)]
+
+    # # Creating a dimxdim matrix filled with -1s
+    # grid = np.full((dim, dim), -1)
+
+    # # Setting the inner values of the matrix 'x' (excluding the borders) to 0 using slicing
+    # grid[1:-1, 1:-1] = 0
+
+    number_symbols = int((1-percent_empty_open)*(dim*dim))
+
+    inner_map_length = (dim-2)**2
+    inner_map = np.zeros((inner_map_length)) #map inside -1 boundaries
+
+    for i in range(number_symbols):
+        inner_map[random.randint(0, inner_map_length-1)] = random.choice(numerical_props)
+
+    inner_map = inner_map.reshape((dim-2, dim-2))
+
+    grid = np.pad(inner_map, pad_width=1, mode='constant',constant_values=-1)
+
+    print(grid)
+
+    return grid.astype(int), start, goal
 
 # Draw final results
 def draw_path(grid, start, goal, path, title):
@@ -446,14 +481,16 @@ def draw_path(grid, start, goal, path, title):
             if grid[i][j]==-1: 
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='k'))  # obstacle
             elif grid[i][j]==1:
-                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='c',facecolor='c'))  # B
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='c'))  # B
             elif grid[i][j]==2:
-                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='m',facecolor='m'))  # A
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='m'))  # A
+            elif grid[i][j]==3:
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='blueviolet'))  # C
             else:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='w'))  # free space
     # Draw path
     for x, y in path:
-        ax.add_patch(Rectangle((y-0.5, x-0.5),1,1,edgecolor='k',facecolor='b'))          # path
+        ax.add_patch(Rectangle((y-0.5, x-0.5),1,1,edgecolor='k',facecolor='grey'))          # path
     ax.add_patch(Rectangle((start[1]-0.5, start[0]-0.5),1,1,edgecolor='k',facecolor='g'))# start
     ax.add_patch(Rectangle((goal[1]-0.5, goal[0]-0.5),1,1,edgecolor='k',facecolor='r'))  # goal
     # Graph settings
