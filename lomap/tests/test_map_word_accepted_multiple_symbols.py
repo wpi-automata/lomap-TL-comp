@@ -99,7 +99,7 @@ def numerical_binary(binary):
 
 
 def main():
-    fsa = make_fsa(['F a && F !b'])
+    fsa = make_fsa(['F a && F !b']) # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
     
     print('Is FSA deterministic:', fsa.is_deterministic())
 

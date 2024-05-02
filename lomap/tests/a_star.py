@@ -469,8 +469,28 @@ def create_map(percent_empty_open, props):
     return grid.astype(int), start, goal
 
 # Draw final results
+def draw_grid(grid, title):
+    create_grid(grid)
+    # Graph settings
+    plt.title(title)
+    plt.axis('scaled')
+    plt.gca().invert_yaxis()
+
+# Draw final results
 def draw_path(grid, start, goal, path, title):
+    fig, ax = create_grid(grid)
     # Visualization of the found path using matplotlib
+    # Draw path
+    for x, y in path:
+        ax.add_patch(Rectangle((y-0.5, x-0.5),1,1,edgecolor='k',facecolor='grey'))          # path
+    ax.add_patch(Rectangle((start[1]-0.5, start[0]-0.5),1,1,edgecolor='k',facecolor='g'))# start
+    ax.add_patch(Rectangle((goal[1]-0.5, goal[0]-0.5),1,1,edgecolor='k',facecolor='r'))  # goal
+    # Graph settings
+    plt.title(title)
+    plt.axis('scaled')
+    plt.gca().invert_yaxis()
+
+def create_grid(grid):
     fig, ax = plt.subplots(1)
     ax.margins()
     # Draw map
@@ -481,22 +501,14 @@ def draw_path(grid, start, goal, path, title):
             if grid[i][j]==-1: 
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='k'))  # obstacle
             elif grid[i][j]==1:
-                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='c'))  # B
-            elif grid[i][j]==2:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='m'))  # A
+            elif grid[i][j]==2:
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='c'))  # B
             elif grid[i][j]==3:
-                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='blueviolet'))  # C
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='blueviolet'))  # A&B
             else:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='w'))  # free space
-    # Draw path
-    for x, y in path:
-        ax.add_patch(Rectangle((y-0.5, x-0.5),1,1,edgecolor='k',facecolor='grey'))          # path
-    ax.add_patch(Rectangle((start[1]-0.5, start[0]-0.5),1,1,edgecolor='k',facecolor='g'))# start
-    ax.add_patch(Rectangle((goal[1]-0.5, goal[0]-0.5),1,1,edgecolor='k',facecolor='r'))  # goal
-    # Graph settings
-    plt.title(title)
-    plt.axis('scaled')
-    plt.gca().invert_yaxis()
+    return fig, ax
 
 if __name__ == "__main__":
     # Load the map

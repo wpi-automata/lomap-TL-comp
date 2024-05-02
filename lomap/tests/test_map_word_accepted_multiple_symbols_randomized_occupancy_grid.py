@@ -30,7 +30,7 @@ import math
 
 import sys
 
-DEFAULT_PERCENT_EMPTY_OPEN = 0.7
+DEFAULT_PERCENT_EMPTY_OPEN = 0.9
 
 def make_fsa(specs):
     for spec in specs:
@@ -102,7 +102,7 @@ def numerical_binary(binary):
 
 
 def main(percent_empty_open):
-    fsa = make_fsa(['F a && F !b'])
+    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
     props = {v: k for k, v in fsa.props.items()}
 
     print('Is FSA deterministic:', fsa.is_deterministic())
@@ -116,6 +116,8 @@ def main(percent_empty_open):
     print(f"Symbols produced: {astar_symbols_produced}")
 
     # Show result
+    draw_grid(grid, 'A*')
+    plt.show()
     draw_path(grid, start, goal, astar_path, 'A*')
     plt.show()
 
