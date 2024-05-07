@@ -99,12 +99,12 @@ def numerical_binary(binary):
 
 
 def main():
-    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
+    fsa = make_fsa(['F a && F !b']) # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
     
     print('Is FSA deterministic:', fsa.is_deterministic())
 
     # Load the map
-    grid, start, goal = load_map('map.csv')
+    grid, start, goal = load_map('map_multiple_symbols.csv')
 
     # Search
     astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)
@@ -116,10 +116,10 @@ def main():
     plt.show()
 
     word = create_parseable_path(fsa, astar_symbols_produced)
+
+    print(f"word: {word}")
     """
-    [set(), set(), set(), set(), 
-     set(), set(), set(), set(), set(), set(), set(),
-    set(['b']), set(['a'])] #yes, example from LTL map
+    word: [set(), set(), set(), set(), set(), set(), set(), set(), set(), set(), set(), {'b', 'a'}, {'b'}]
     """
 
     is_word_accepted_verbose(fsa, word)

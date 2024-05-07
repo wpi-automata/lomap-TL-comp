@@ -28,6 +28,10 @@ import csv
 from a_star import *
 import math
 
+import sys
+
+DEFAULT_PERCENT_EMPTY_OPEN = 0.9
+
 def make_fsa(specs):
     for spec in specs:
         aut = Fsa(multi=False)
@@ -60,8 +64,7 @@ def is_word_accepted_verbose(fsa, word):
     print('terminal state', s_current, 'Accept word:', s_current in fsa.final)
 
 
-def create_parseable_path(fsa, symbols_produced):
-    props = {v: k for k, v in fsa.props.items()}
+def create_parseable_path(props, symbols_produced):
 
     new_path = []
 
@@ -98,13 +101,17 @@ def numerical_binary(binary):
     return symbols
 
 
-def main():
-    fsa = make_fsa(['F a && F !b']) # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
-    
+def main(percent_empty_open):
+    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
+    props = {v: k for k, v in fsa.props.items()}
+
+    fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    plt.show()
+
     print('Is FSA deterministic:', fsa.is_deterministic())
 
     # Load the map
-    grid, start, goal = load_map('map_multiple_symbols.csv')
+    grid, start, goal = create_map(percent_empty_open, props)
 
     # Search
     astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)
@@ -112,10 +119,12 @@ def main():
     print(f"Symbols produced: {astar_symbols_produced}")
 
     # Show result
+    draw_grid(grid, 'A*')
+    plt.show()
     draw_path(grid, start, goal, astar_path, 'A*')
     plt.show()
 
-    word = create_parseable_path(fsa, astar_symbols_produced)
+    word = create_parseable_path(props, astar_symbols_produced)
 
     print(f"word: {word}")
     """
@@ -128,4 +137,9 @@ def main():
     print('Language empty?:', fsa.is_language_empty())
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) >= 2:
+        percent_empty_open = sys.argv[1] if sys.argv[1] else DEFAULT_PERCENT_EMPTY_OPEN
+    else:
+        percent_empty_open = DEFAULT_PERCENT_EMPTY_OPEN
+    main(percent_empty_open)
+
