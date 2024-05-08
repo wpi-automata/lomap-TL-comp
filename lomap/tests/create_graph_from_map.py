@@ -10,27 +10,25 @@ def create_graph(clusters):
 
     for i in range(len(keys)-1):
         key = keys[i]
-        key_clusters = clusters.get(key)
+        cluster = clusters.get(key)
         for j in range(i+1, len(keys)):
             comparison_key = keys[j]
-            comparison_key_clusters = clusters.get(comparison_key)
+            comparison_cluster = clusters.get(comparison_key)
             
-            if cluster_connected(key_clusters, comparison_key_clusters):
+            if cluster_connected(cluster, comparison_cluster):
                 edges.append([key, comparison_key])
     
     return edges
                     
 
-def cluster_connected(key_clusters, comparison_key_clusters):
-    for cluster in key_clusters:
-        for comparison_cluster in comparison_key_clusters:
-            for point in cluster:
-                for comparison_point in comparison_cluster:
-                    if connected(point, comparison_point):
-                        return True
+def cluster_connected(cluster, comparison_cluster):
+    for point in cluster:
+        for comparison_point in comparison_cluster:
+            if connected(point, comparison_point):
+                return True
     return False
 
-def give_clusters_same_symbol_unique_id(clusters):
+def each_cluster_uuid(clusters):
     unique_clusters = dict()
 
     for key in clusters.keys():
@@ -87,9 +85,9 @@ def main():
     grid, start, goal = load_map('map_multiple_symbols.csv')
     clusters = create_clusters(np.asarray(grid))
     print(f"Clusters: {clusters}")
-    unique_clusters = give_clusters_same_symbol_unique_id(clusters)
+    unique_clusters = each_cluster_uuid(clusters)
     print(f"Unique Clusters: {unique_clusters}")
-    edges = create_graph(clusters)
+    edges = create_graph(unique_clusters)
     print(f"Edges: {edges}")
 
     G = nx.Graph()
@@ -101,20 +99,27 @@ def main():
 class TestStringMethods(unittest.TestCase):
 
     def test_edges_symbol_not_touching_empty(self):
-        self.assertEqual(create_graph(create_clusters(np.asarray(load_map('unit_test_maps/map_2_encased.csv')[0]))), [['-1', '0'], ['0', '3'], ['3', '2']])
+        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('unit_test_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
 
     def test_clusters_multiple_groupings_same_symbol(self):
         self.assertEqual(len(create_clusters(np.asarray(load_map('unit_test_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
 
     def test_unique_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(list(give_clusters_same_symbol_unique_id(create_clusters(np.asarray(load_map('unit_test_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
+        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('unit_test_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
 
-    def test_graph(self):
-        edges = create_graph(create_clusters(np.asarray(load_map('unit_test_maps/map_2_encased.csv')[0])))
+    def test_graph_symbol_not_touching_empty(self):
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('unit_test_maps/map_2_encased.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 4)
         self.assertEqual(G.number_of_edges(), 3)
+
+    def test_graph_multiple_groupings_same_symbol(self):
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('unit_test_maps/map_multiple_2_groups.csv')[0]))))
+        G = nx.Graph()
+        G.add_edges_from(edges)
+        self.assertEqual(G.number_of_nodes(), 5)
+        self.assertEqual(G.number_of_edges(), 4)
 
 
 if __name__ == '__main__':
