@@ -432,7 +432,6 @@ def load_map(file_path):
             else:
                 parsed_row = [int(col) for col in row]
                 grid.append(parsed_row)
-    print(f"grid: {grid}")
     return grid, start, goal
 
 #TODO: allow for user to choose dimensions of map
