@@ -2,6 +2,7 @@ from a_star import *
 import numpy as np
 import math
 import unittest
+import networkx as nx
 
 def create_graph(clusters):
     edges = list()
@@ -57,12 +58,17 @@ def cluster(r, c, val, clusters, mappings):
 #uses 4 connected neighbor check
 def is_neighbor(r,c,cluster):
     for node in cluster:
-        if connected(node, [r,c]): #if they are next to each other they will be 1 unit away
+        if connected(node, [r,c]):
             return True
     return False
         
 def connected(a, b):
     return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1. #if they are next to each other they will be 1 unit away
+
+def draw_graph(nx_graph):
+    fig, axes = plt.subplots(1,1,dpi=72)
+    nx.draw(nx_graph, pos=nx.spring_layout(nx_graph), ax=axes, with_labels=True)
+    plt.show()
 
 def main():
     grid, start, goal = load_map('map_multiple_symbols.csv')
@@ -70,6 +76,11 @@ def main():
     print(f"Clusters: {clusters}")
     edges = create_graph(clusters)
     print(f"Edges: {edges}")
+
+    G = nx.Graph()
+    G.add_edges_from(edges)
+
+    draw_graph(G)
 
 
 class TestStringMethods(unittest.TestCase):
@@ -80,7 +91,15 @@ class TestStringMethods(unittest.TestCase):
     def test_clusters_multiple_groupings_same_symbol(self):
         self.assertEqual(len(create_clusters(np.asarray(load_map('unit_test_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
 
+    def test_graph(self):
+        edges = create_graph(create_clusters(np.asarray(load_map('unit_test_maps/map_2_encased.csv')[0])))
+        G = nx.Graph()
+        G.add_edges_from(edges)
+        self.assertEqual(G.number_of_nodes(), 4)
+        self.assertEqual(G.number_of_edges(), 3)
+
+
 if __name__ == '__main__':
     
-    unittest.main()
-    # main()
+    # unittest.main()
+    main()
