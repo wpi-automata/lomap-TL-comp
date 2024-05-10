@@ -505,13 +505,15 @@ def create_grid(grid):
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='c'))  # B
             elif grid[i][j]==3:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='blueviolet'))  # A&B
+            elif grid[i][j]==4:
+                ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='y'))  # A&B
             else:
                 ax.add_patch(Rectangle((j-0.5, i-0.5),1,1,edgecolor='k',facecolor='w'))  # free space
     return fig, ax
 
 if __name__ == "__main__":
     # Load the map
-    grid, start, goal = load_map('map.csv')
+    grid, start, goal = load_map('maps/map.csv')
 
     # Search
     astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)

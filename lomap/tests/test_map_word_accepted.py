@@ -104,7 +104,7 @@ def main():
     print('Is FSA deterministic:', fsa.is_deterministic())
 
     # Load the map
-    grid, start, goal = load_map('map_multiple_symbols.csv')
+    grid, start, goal = load_map('maps/map_multiple_symbols.csv')
 
     # Search
     astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)
