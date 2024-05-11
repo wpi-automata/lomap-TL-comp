@@ -3,10 +3,6 @@ import numpy as np
 import math
 import unittest
 import networkx as nx
-# from pyvis.network import Network
-# import netgraph
-# https://pygraphviz.github.io/documentation/stable/install.html
-# from graphviz import Digraph
 
 def create_graph(clusters):
     edges = list()
@@ -96,7 +92,7 @@ def draw_graph(nx_graph):
     arc_rad = 0.25
     nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=curved_edges, connectionstyle=f'arc3, rad = {arc_rad}')
 
-    edge_weights = nx.get_edge_attributes(nx_graph,'w')
+    edge_weights = nx.get_edge_attributes(nx_graph,'pi')
     curved_edge_labels = {edge: edge_weights[edge] for edge in curved_edges}
     straight_edge_labels = {edge: edge_weights[edge] for edge in straight_edges}
     my_draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=curved_edge_labels,rotate=False,rad = arc_rad)
@@ -291,8 +287,7 @@ def main():
     edges.extend(reversed_edges)
     
     for edge in edges:
-        edge.append({'w':str(edge[0])+"->"+str(edge[1])})
-
+        edge.append({'pi':str(edge[0])+"->"+str(edge[1])})
 
     G = nx.DiGraph()
     G.add_edges_from(edges)
