@@ -41,24 +41,21 @@ def create_transitions(G, edges, nodes):
 
 def prune_labels(nodes, labels):
 
-    # map(lambda x: map(lambda y: math.floor(float(y)), x), list(labels.values()))
-    # print(f"cleaned: {labels}")
-    # map(lambda x: map(lambda y: y + 1, x), [[1], [1, 2], [1, 2, 3]])
-
-    pruned_labels = copy.deepcopy(labels)
     label_keys = list(labels.keys())
+
+    #for these purposes, need to remove every sub label e.g. 1.1 1.2 and replace it with 1, since same symbol in map
+    for node in nodes:
+        for label_key in label_keys:
+            pruned_label = list(set(map(lambda x: str(math.floor(float(x))),labels.get(label_key)))) #set to remove duplicates
+            labels[label_key] = pruned_label
+    
+    pruned_labels = copy.deepcopy(labels)
 
     for node in nodes:
         node_outgoing_labels = dict()
 
         for label_key in label_keys:
 
-            #for these purposes, need to remove every sub label e.g. 1.1 1.2 and replace it with 1, since same symbol in map
-            #maybe clean with similar : new_dict = {math.floor(float(key)):value for (key,value) in outgoing_labels_for_node.items()}
-            pruned_label = list(map(lambda x: str(math.floor(float(x))),labels.get(label_key)))
-            labels[label_key] = pruned_label
-
-            # label_key_list = label_key.strip('][','').split(', ')
             label_key_list = label_key.strip('][\'\"').split('\', \'')
             if label_key_list[0] == node:
                 node_outgoing_labels[label_key_list[1]] = labels.get(label_key)
@@ -90,6 +87,7 @@ def prune_labels(nodes, labels):
                     CASES:
                     1) if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
                     2) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
+                    3) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
                     etc
                     '''
 
@@ -97,7 +95,7 @@ def prune_labels(nodes, labels):
                     if transitions_that_go_to_intersection_node==transitions_that_share_same_value:
                         if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
                             new_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
-                            print(f"new_transition_dict: {new_transition_dict}")
+                            print(f"new_transition_dict: {new_transition_dict}")                    
 
                     #TODO: other cases
                     #TODO: more work on removing 1.1 and 1.0
