@@ -3,6 +3,8 @@ from create_graph_from_map import *
 import networkx as nx
 import math
 import copy
+from test_map_word_accepted_randomized_occupancy_grid import *
+from lomap.algorithms.product import ts_times_buchi
 
 def create_transitions(G, edges, nodes):
 
@@ -53,6 +55,7 @@ def prune_labels(nodes, labels):
 
     for node in nodes:
         node_outgoing_labels = dict()
+        simplfied_node_rep = str(math.floor(float(node)))
 
         for label_key in label_keys:
 
@@ -62,50 +65,61 @@ def prune_labels(nodes, labels):
 
         new_transition_dict = dict()
 
-        if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
-            node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()])
-            print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
-            if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
-                print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
+        case_1(node, node_outgoing_labels, new_transition_dict)
+        case_2(simplfied_node_rep, node_outgoing_labels)        
 
-                #TODO: check if works with multiple intersection values
-                for node_outgoing_label_intersection in node_outgoing_label_intersections:
+        if not new_transition_dict:
+            step_transition_dict = {k:[item for item in v] for (k,v) in node_outgoing_labels.items()}
+            new_transition_dict.update(step_transition_dict)
 
-                    print(f"node_outgoing_label_intersection: {node_outgoing_label_intersection}")
-
-                    #transitions that go to node that shares same value as intersection between transitions
-                    transitions_that_go_to_intersection_node = {k:v for (k,v) in node_outgoing_labels.items() if str(math.floor(float(k))) == node_outgoing_label_intersection}
-                    print(f"transitions_that_go_to_intersection_node dict: {transitions_that_go_to_intersection_node}")
-
-                    #transitions that share same value as intersection
-                    transitions_that_share_same_value = {k:v for (k,v) in node_outgoing_labels.items() for item in v if item == node_outgoing_label_intersection}
-                    # transitions_that_share_same_value = {k:[item for item in v if item==str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
-
-                    print(f"transitions_that_share_same_value dict: {transitions_that_share_same_value}")
-
-                    '''
-                    CASES:
-                    1) if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
-                    2) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
-                    3) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
-                    etc
-                    '''
-
-                    #CASE 1:
-                    if transitions_that_go_to_intersection_node==transitions_that_share_same_value:
-                        if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
-                            new_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
-                            print(f"new_transition_dict: {new_transition_dict}")                    
-
-                    #TODO: other cases
-                    #TODO: more work on removing 1.1 and 1.0
-        
         if new_transition_dict:
             for key in new_transition_dict.keys():
                 new_key = str([node, key])
                 pruned_labels[new_key] = new_transition_dict.get(key)
 
     return pruned_labels
+
+'''
+CASES:
+1) if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
+2) if there is an outgoing edge containing same label as node remove it 
+3) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
+4) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
+etc
+'''
+
+def case_1(node, node_outgoing_labels, new_transition_dict):
+    if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
+        node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()])
+        print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
+        if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
+            print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
+
+            #TODO: check if works with multiple intersection values
+            for node_outgoing_label_intersection in node_outgoing_label_intersections:
+
+                print(f"node_outgoing_label_intersection: {node_outgoing_label_intersection}")
+
+                #transitions that go to node that shares same value as intersection between transitions
+                transitions_that_go_to_intersection_node = {k:v for (k,v) in node_outgoing_labels.items() if str(math.floor(float(k))) == node_outgoing_label_intersection}
+                print(f"transitions_that_go_to_intersection_node dict: {transitions_that_go_to_intersection_node}")
+
+                #transitions that share same value as intersection
+                transitions_that_share_same_value = {k:v for (k,v) in node_outgoing_labels.items() for item in v if item == node_outgoing_label_intersection}
+                # transitions_that_share_same_value = {k:[item for item in v if item==str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
+
+                print(f"transitions_that_share_same_value dict: {transitions_that_share_same_value}")
+
+                if transitions_that_go_to_intersection_node==transitions_that_share_same_value:
+                    # if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
+                    step_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
+                    new_transition_dict.update(step_transition_dict)
+                    print(f"new_transition_dict: {new_transition_dict}")     
+
+def case_2(simplfied_node_rep, node_outgoing_labels):
+    for key in node_outgoing_labels.keys():
+            if simplfied_node_rep in node_outgoing_labels.get(key):
+                node_outgoing_labels.get(key).remove(simplfied_node_rep)               
 
 
 def main():
@@ -137,8 +151,21 @@ def main():
 
     #TODO: replace numerical labels with alphabetical labels from FSA
 
+    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
+    props = {v: k for k, v in fsa.props.items()}
+
+    fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    plt.show()
+
+    pa = ts_times_buchi(G, fsa)
+    print('Created product automaton of size', pa.size())
+    pa.visualize(draw='matplotlib')
+    plt.show()
+
+    # print('Is FSA deterministic:', fsa.is_deterministic())
+
+
 
 if __name__ == '__main__':
     
-    # unittest.main()
     main()
