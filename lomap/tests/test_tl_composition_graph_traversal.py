@@ -180,8 +180,6 @@ def main():
     # Search
     astar_path, astar_symbols_produced, aster_steps = astar(grid, start, goal)
 
-    path, symbols, steps =  
-
     print(f"Symbols produced: {astar_symbols_produced}")
 
     # Show result

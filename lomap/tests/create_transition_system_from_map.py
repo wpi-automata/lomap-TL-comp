@@ -1,10 +1,38 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.getcwd()))
+sys.path.append(os.path.abspath(os.getcwd())+'/src')
+
+import string 
+
 from a_star import *
 from create_graph_from_map import *
 import networkx as nx
 import math
 import copy
 from test_map_word_accepted_randomized_occupancy_grid import *
-from lomap.algorithms.product import ts_times_buchi
+from lomap.algorithms.product import fsa_times_fsa
+
+def create_propositions(props_numerical):
+    props = dict()
+    # for i in props_numerical:
+    number_power_of_twos = sum(1 for i in props_numerical if isPowerOfTwo(i))
+    # props_alphabetical = list(map(chr, range(number_power_of_twos))) #creates alphabetical rep 
+    props_alphabetical = list(string.ascii_lowercase)[0:number_power_of_twos]
+    for i in range(len(props_alphabetical)):
+        props[props_alphabetical[i]] = 2**i
+    return props
+
+# def power_of_two(x):
+#     return (x and (not(x & (x - 1))) )
+ 
+# Function to check
+# if x is power of 2
+def isPowerOfTwo(n):
+    # return (math.log(n)/math.log(2)).is_integer()
+    return (n & (n-1) == 0) and n != 0
+
 
 def create_transitions(G, edges, nodes):
 
@@ -123,7 +151,7 @@ def case_2(simplfied_node_rep, node_outgoing_labels):
 
 
 def main():
-    grid, start, goal = load_map('maps/map_multiple_symbols_BCD.csv')
+    grid, start, goal = load_map('maps/map_multiple_symbols_BCD_level3.csv')
     # draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
     print(f"Clusters: {clusters}")
@@ -146,18 +174,29 @@ def main():
     for edge in edges:
         edge.append({'pi':labels.get(str(edge))})
     G.add_edges_from(edges)
-
     draw_graph(G)
+
+    """FSA stuff"""
+    props_numerical = list(map(int,list(clusters.keys())))
+    props_numerical.sort()
+    props = create_propositions(props_numerical)
+    print(f"FSA Props: {props}")
+
+    aut = Fsa(multi=False)
+    aut.from_graph_edges_props(G, edges, props, 0)
+    # aut.g = G
+    aut.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    plt.show()
 
     #TODO: replace numerical labels with alphabetical labels from FSA
 
     fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
     props = {v: k for k, v in fsa.props.items()}
 
-    fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
-    plt.show()
+    # fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    # plt.show()
 
-    pa = ts_times_buchi(G, fsa)
+    pa = fsa_times_fsa((fsa, aut))
     print('Created product automaton of size', pa.size())
     pa.visualize(draw='matplotlib')
     plt.show()

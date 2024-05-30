@@ -354,6 +354,10 @@ class Fsa(Automaton):
         automaton_from_spin(self, formula, lines)
         # We expect a deterministic FSA
         assert(len(self.init)==1)
+    
+    def from_graph_edges_props(self, graph, edges, props, init_state):
+        automaton_from_graph(self, graph, edges, props, init_state)
+        # assert(len(self.init)==1)
 
     def is_language_empty(self):
         """
@@ -693,6 +697,53 @@ def automaton_from_spin(aut, formula, lines):
                 aut.init[this_state] = 1
             if this_state.startswith('accept'):
                 aut.final.add(this_state)
+
+def automaton_from_graph(aut, graph, edges, props, init_state):
+    '''TODO:
+    '''
+
+    # Form the bitmap dictionary of each proposition
+    # Note: range goes upto rhs-1
+    aut.props = dict(zip(props, [2 ** x for x in range(len(props))]))
+    aut.name = '{} from map'.format(aut.name)
+    aut.final = set()
+    aut.init = {}
+    # aut.init["0"] = 0
+    # aut.final.add("accept_all")
+
+    # Alphabet is the power set of propositions, where each element
+    # is a symbol that corresponds to a tuple of propositions
+    # Note: range goes upto rhs-1
+    aut.alphabet = set(range(0, 2 ** len(aut.props)))
+
+    aut.g = graph
+
+    # '::.*' means transition, '.*:' means state
+    # this_state = None
+    # for line in lines:
+    #     if(line[0:2] == '::'):
+    #         m = re.search(':: (.*) -> goto (.*)', line)
+    #         guard = m.group(1)
+    #         bitmaps = aut.get_guard_bitmap(guard)
+    #         next_state = m.group(2)
+    #         # Add edge
+    #         transition_data = {'weight': 0, 'input': bitmaps,
+    #                            'guard' : guard, 'label': guard}
+    #         aut.g.add_edge(this_state, next_state, attr_dict=transition_data)
+    #     elif line[0:4] == 'skip':
+    #         # Add self-looping edge
+    #         transition_data = {'weight': 0, 'input': aut.alphabet,
+    #                            'guard' : '(1)', 'label': '(1)'}
+    #         aut.g.add_edge(this_state, this_state, attr_dict=transition_data)
+    #     else:
+    #         this_state = line[0:-1]
+    #         # Add state
+    #         aut.g.add_node(this_state)
+    #         # Mark final or init
+    #         if this_state.endswith('init'):
+    #             aut.init[this_state] = 1
+    #         if this_state.startswith('accept'):
+                # aut.final.add(this_state)
 
 def infix_formula_to_prefix(formula):
     # This function expects a string where operators and parantheses
