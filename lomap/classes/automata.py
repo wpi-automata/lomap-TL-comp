@@ -708,15 +708,21 @@ def automaton_from_graph(aut, graph, edges, props, init_state):
     aut.name = '{} from map'.format(aut.name)
     aut.final = set()
     aut.init = {}
-    # aut.init["0"] = 0
-    # aut.final.add("accept_all")
+    aut.init["0"] = 0
+    aut.final.add("accept_all")
 
     # Alphabet is the power set of propositions, where each element
     # is a symbol that corresponds to a tuple of propositions
     # Note: range goes upto rhs-1
     aut.alphabet = set(range(0, 2 ** len(aut.props)))
 
-    aut.g = graph
+    # aut.g = graph
+
+    for edge in edges:
+        transition_data = {'weight': 0, 'input': set(edge[2]["pi"]),
+                               'guard' : set(edge[2]["pi"]), 'label': edge[2]["pi"]}
+        aut.g.add_edge(edge[0], edge[1], attr_dict=transition_data)
+
 
     # '::.*' means transition, '.*:' means state
     # this_state = None

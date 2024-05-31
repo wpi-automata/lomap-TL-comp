@@ -12,7 +12,8 @@ import networkx as nx
 import math
 import copy
 from test_map_word_accepted_randomized_occupancy_grid import *
-from lomap.algorithms.product import fsa_times_fsa
+from lomap.algorithms.product import ts_times_buchi
+from lomap.classes import Buchi, Ts
 
 def create_propositions(props_numerical):
     props = dict()
@@ -147,7 +148,22 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
             if simplfied_node_rep in node_outgoing_labels.get(key):
-                node_outgoing_labels.get(key).remove(simplfied_node_rep)               
+                node_outgoing_labels.get(key).remove(simplfied_node_rep)    
+
+
+def construct_ts(G):
+    ts = Ts(directed=True, multi=False)
+    ts.g = G
+    # ts.g = nx.grid_2d_graph(4, 3)
+
+    # ts.init[(1, 1)] = 1
+
+    # ts.g.add_node((0, 0), attr_dict={'prop': set(['a'])})
+    # ts.g.add_node((3, 2), attr_dict={'prop': set(['b'])})
+
+    # ts.g.add_edges_from(ts.g.edges(), weight=1)
+
+    return ts           
 
 
 def main():
@@ -176,30 +192,44 @@ def main():
     G.add_edges_from(edges)
     draw_graph(G)
 
-    """FSA stuff"""
-    props_numerical = list(map(int,list(clusters.keys())))
-    props_numerical.sort()
-    props = create_propositions(props_numerical)
-    print(f"FSA Props: {props}")
+    ts = construct_ts(G)
 
-    aut = Fsa(multi=False)
-    aut.from_graph_edges_props(G, edges, props, 0)
-    # aut.g = G
-    aut.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    spec = 'G (F a && F g && !e)'
+    buchi = Buchi()
+    buchi.from_formula(spec)
+    print('Created Buchi automaton of size', buchi.size())
+    buchi.visualize(draw='matplotlib')
     plt.show()
 
-    #TODO: replace numerical labels with alphabetical labels from FSA
-
-    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
-    props = {v: k for k, v in fsa.props.items()}
-
-    # fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
-    # plt.show()
-
-    pa = fsa_times_fsa((fsa, aut))
+    pa = ts_times_buchi(ts, buchi)
     print('Created product automaton of size', pa.size())
     pa.visualize(draw='matplotlib')
     plt.show()
+
+    """FSA stuff"""
+    # props_numerical = list(map(int,list(clusters.keys())))
+    # props_numerical.sort()
+    # props = create_propositions(props_numerical)
+    # print(f"FSA Props: {props}")
+
+    # aut = Fsa(multi=False)
+    # aut.from_graph_edges_props(G, edges, props, 0)
+    # # aut.g = G
+    # aut.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    # plt.show()
+
+    #TODO: replace numerical labels with alphabetical labels from FSA
+
+    # fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
+    # props = {v: k for k, v in fsa.props.items()}
+
+    # # fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    # # plt.show()
+
+    # pa = fsa_times_fsa((fsa, aut))
+    # print(f'Created product automaton of size {pa.size()}')
+    # pa.visualize(draw='matplotlib')
+    # plt.show()
 
     # print('Is FSA deterministic:', fsa.is_deterministic())
 

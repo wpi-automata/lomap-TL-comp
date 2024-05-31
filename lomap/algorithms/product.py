@@ -497,10 +497,10 @@ def fsa_times_fsa(fsa_tuple, from_current=False,
             product_fsa.final.add(current_state)
         # Iterate over all possible transitions
         for next_state in neighbors:
-            guard = [fsa.g[u][v]['guard']
-                            for u, v, fsa in zip(current_state, next_state,
-                                                     fsa_tuple)]
-            guard = '({})'.format(' ) & ( '.join(guard))
+            # guard = [fsa.g[u][v]['guard']
+            #                 for u, v, fsa in zip(current_state, next_state,
+            #                                          fsa_tuple)]
+            # guard = '({})'.format(' ) & ( '.join(guard))
 #             bitmaps = product_fsa.get_guard_bitmap(guard)
 
             aux = [set(it.chain.from_iterable(
@@ -514,7 +514,7 @@ def fsa_times_fsa(fsa_tuple, from_current=False,
                     stack.append((next_state, it.product(*[fsa.g[s]
                                for s, fsa in zip(next_state, fsa_tuple)])))
                 transition_data = get_transition_data(current_state, next_state,
-                              guard=guard, bitmaps=bitmaps, fsa_tuple=fsa_tuple)
+                                bitmaps=bitmaps, fsa_tuple=fsa_tuple)
                 product_fsa.g.add_edge(current_state, next_state,
                                        attr_dict=transition_data)
     # Return fsa_1 x fsa_2 x ...
