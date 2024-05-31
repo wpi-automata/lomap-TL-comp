@@ -5,6 +5,7 @@ import math
 import copy
 from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.algorithms.product import ts_times_buchi
+from lomap.classes import Buchi, Ts
 
 def create_transitions(G, edges, nodes):
 
@@ -151,19 +152,21 @@ def main():
 
     #TODO: replace numerical labels with alphabetical labels from FSA
 
-    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
-    props = {v: k for k, v in fsa.props.items()}
+    ts = Ts(directed=True, multi=False)
+    ts.g = G
+    # ts.init[(1, 1)] = 1
 
-    fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
+    spec = 'G (F a && F g && !e)'
+    buchi = Buchi()
+    buchi.from_formula(spec)
+    print('Created Buchi automaton of size', buchi.size())
+    buchi.visualize(draw='matplotlib')
     plt.show()
 
-    pa = ts_times_buchi(G, fsa)
+    pa = ts_times_buchi(ts, buchi)
     print('Created product automaton of size', pa.size())
     pa.visualize(draw='matplotlib')
     plt.show()
-
-    # print('Is FSA deterministic:', fsa.is_deterministic())
-
 
 
 if __name__ == '__main__':
