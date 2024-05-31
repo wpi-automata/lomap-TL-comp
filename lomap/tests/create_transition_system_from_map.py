@@ -206,35 +206,6 @@ def main():
     pa.visualize(draw='matplotlib')
     plt.show()
 
-    """FSA stuff"""
-    # props_numerical = list(map(int,list(clusters.keys())))
-    # props_numerical.sort()
-    # props = create_propositions(props_numerical)
-    # print(f"FSA Props: {props}")
-
-    # aut = Fsa(multi=False)
-    # aut.from_graph_edges_props(G, edges, props, 0)
-    # # aut.g = G
-    # aut.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
-    # plt.show()
-
-    #TODO: replace numerical labels with alphabetical labels from FSA
-
-    # fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
-    # props = {v: k for k, v in fsa.props.items()}
-
-    # # fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
-    # # plt.show()
-
-    # pa = fsa_times_fsa((fsa, aut))
-    # print(f'Created product automaton of size {pa.size()}')
-    # pa.visualize(draw='matplotlib')
-    # plt.show()
-
-    # print('Is FSA deterministic:', fsa.is_deterministic())
-
-
-
 if __name__ == '__main__':
     
     main()
