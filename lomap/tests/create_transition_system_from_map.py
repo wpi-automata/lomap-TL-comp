@@ -237,11 +237,23 @@ def main():
 
     draw_graph(G)
 
-    #TODO: replace numerical labels with alphabetical labels from FSA
-
+    #FIXME: rectify that lomap uses old networkx version that assumes digraphs have .node attribute
     ts = Ts(directed=True, multi=False)
     ts.g = G
-    # ts.init[(1, 1)] = 1
+    ts.init[(0, 0)] = 0
+
+    '''
+    Create transition system example:
+        ts = Ts(directed=True, multi=False)
+        ts.g = nx.grid_2d_graph(4, 3)
+
+        ts.init[(1, 1)] = 1
+
+        ts.g.add_node((0, 0), attr_dict={'prop': set(['a'])})
+        ts.g.add_node((3, 2), attr_dict={'prop': set(['b'])})
+
+        ts.g.add_edges_from(ts.g.edges(), weight=1)
+    '''
 
     spec = 'G a'
     buchi = Buchi()
