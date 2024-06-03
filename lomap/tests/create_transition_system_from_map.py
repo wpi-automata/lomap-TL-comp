@@ -57,6 +57,7 @@ def create_numerical_grid(props, symbol_grid):
                     for letter in val:
                         sum += props.get(letter)
                     grid[row][col] = sum
+                    props[val] = sum
                 else:
                     print("ERROR parsing grid from symbols to binary numerical translation")
     
@@ -188,14 +189,14 @@ def convert_edges_alphabetical(labels, props, edges):
     for edge in edges:
         pi = labels.get(str(edge))
         for i in range(len(pi)):
-            if int(pi[i]) != 0:
+            if int(float(pi[i])) != 0:
                 pi[i] = num_to_alpha_prop.get(int(pi[i]))
 
-        if int(edge[0])!=0:
-            edge[0] = num_to_alpha_prop.get(int(edge[0]))
-        if int(edge[1])!=0:
-            edge[1] = num_to_alpha_prop.get(int(edge[1]))
-        edge.append({'pi':pi})
+        if int(float(edge[0]))!=0:
+            edge[0] = num_to_alpha_prop.get(int(float(edge[0])))
+        if int(float(edge[1]))!=0:
+            edge[1] = num_to_alpha_prop.get(int(float(edge[1])))
+        edge.append({'pi':pi, 'weight': 0})
 
     return edges
 
@@ -235,12 +236,14 @@ def main():
 
     G.add_edges_from(alphabetical_edges)
 
+    ts = Ts(directed=True, multi=False)
+    for key in copy.deepcopy(G.nodes.keys()):
+        G.add_node(key, prop=key)
+    ts.g = G
+    ts.init = {'c'}
+
     draw_graph(G)
 
-    #FIXME: rectify that lomap uses old networkx version that assumes digraphs have .node attribute
-    ts = Ts(directed=True, multi=False)
-    ts.g = G
-    ts.init[(0, 0)] = 0
 
     '''
     Create transition system example:
@@ -255,7 +258,7 @@ def main():
         ts.g.add_edges_from(ts.g.edges(), weight=1)
     '''
 
-    spec = 'G a'
+    spec = 'F a'
     buchi = Buchi()
     buchi.from_formula(spec)
     print('Created Buchi automaton of size', buchi.size())

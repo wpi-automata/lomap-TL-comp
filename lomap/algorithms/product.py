@@ -269,7 +269,7 @@ def ts_times_buchi(ts, buchi):
     # Iterate over initial states of the TS
     init_states = []
     for init_ts in ts.init:
-        init_prop = ts.g.node[init_ts].get('prop',set())
+        init_prop = ts.g.nodes[init_ts].get('prop',set())
         # Iterate over the initial states of the FSA
         for init_buchi in buchi.init:
             # Add the initial states to the graph and mark them as initial
@@ -296,7 +296,7 @@ def ts_times_buchi(ts, buchi):
 
         for ts_next in ts.next_states_of_wts(ts_state, traveling_states=False):
             ts_next_state = ts_next[0]
-            ts_next_prop = ts.g.node[ts_next_state].get('prop',set())
+            ts_next_prop = ts.g.nodes[ts_next_state].get('prop',set())
             weight = ts_next[1]
             control = ts_next[2]
             for buchi_next_state in buchi.next_states(buchi_state,
@@ -306,7 +306,7 @@ def ts_times_buchi(ts, buchi):
                 #print "%s -%d-> %s" % (cur_state, weight, next_state)
 
                 if(next_state not in product_model.g):
-                    next_prop = ts.g.node[ts_next_state].get('prop',set())
+                    next_prop = ts.g.nodes[ts_next_state].get('prop',set())
 
                     # Add the new state
                     attr_dict = {'prop': next_prop,
