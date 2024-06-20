@@ -274,7 +274,7 @@ def my_draw_networkx_edge_labels(
 
 
 def main():
-    grid, start, goal = load_map('maps/map_multiple_symbols_BCD.csv')
+    grid, start, goal = load_map('maps/numerical_maps/map_multiple_symbols_BCD.csv')
     draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
     print(f"Clusters: {clusters}")
@@ -297,23 +297,23 @@ def main():
 class TestStringMethods(unittest.TestCase):
 
     def test_edges_symbol_not_touching_empty(self):
-        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
+        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
 
     def test_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
+        self.assertEqual(len(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
 
     def test_unique_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
+        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
 
     def test_graph_symbol_not_touching_empty(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_2_encased.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 4)
         self.assertEqual(G.number_of_edges(), 3)
 
     def test_graph_multiple_groupings_same_symbol(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 5)
@@ -322,5 +322,5 @@ class TestStringMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     
-    # unittest.main()
-    main()
+    unittest.main()
+    # main()

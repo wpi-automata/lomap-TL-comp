@@ -7,6 +7,8 @@ from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.algorithms.product import ts_times_buchi
 from lomap.classes import Buchi, Ts
 
+EMPTY_SYMBOL='0'
+
 # Load map, start and goal point.
 def load_symbol_map(file_path):
     grid = []
@@ -115,6 +117,7 @@ def prune_labels(nodes, labels):
         node_outgoing_labels = dict()
         simplfied_node_rep = str(math.floor(float(node)))
 
+        #TODO: comment what this does
         for label_key in label_keys:
 
             label_key_list = label_key.strip('][\'\"').split('\', \'')
@@ -124,7 +127,8 @@ def prune_labels(nodes, labels):
         new_transition_dict = dict()
 
         case_1(node, node_outgoing_labels, new_transition_dict)
-        case_2(simplfied_node_rep, node_outgoing_labels)        
+        case_2(simplfied_node_rep, node_outgoing_labels)
+        case_3(node_outgoing_labels)
 
         if not new_transition_dict:
             step_transition_dict = {k:[item for item in v] for (k,v) in node_outgoing_labels.items()}
@@ -177,7 +181,30 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
             if simplfied_node_rep in node_outgoing_labels.get(key):
-                node_outgoing_labels.get(key).remove(simplfied_node_rep)      
+                node_outgoing_labels.get(key).remove(simplfied_node_rep)    
+
+def case_3(node_outgoing_labels):
+    for key in node_outgoing_labels.keys():
+        if EMPTY_SYMBOL in node_outgoing_labels.get(key):
+            node_outgoing_labels.get(key).remove(EMPTY_SYMBOL)
+
+#FIXME: this assumes one empty set area, e.g. '0' not '0.0' and '0.1'
+def remove_empty_set(edges, clusters):
+    # del clusters[EMPTY_SYMBOL]
+    to_remove = list()
+    nodes_adjacent_to_empty = list()
+    for edge in edges:
+        if edge[0] == EMPTY_SYMBOL:
+            to_remove.append(edge)
+            nodes_adjacent_to_empty.append(edge[1])
+        elif edge[1] == EMPTY_SYMBOL:
+            to_remove.append(edge)
+            nodes_adjacent_to_empty.append(edge[0])
+    # edges = list(set(edges).difference(to_remove))
+    edges_pruned = [x for x in edges if x not in to_remove]
+    pairs = [[nodes_adjacent_to_empty[i], nodes_adjacent_to_empty[j]] for i in range(len(nodes_adjacent_to_empty)) for j in range(i+1, len(nodes_adjacent_to_empty))]
+    edges_pruned.extend(pairs)
+    return edges_pruned
 
 def convert_edges_alphabetical(labels, props, edges):
 
@@ -200,12 +227,11 @@ def convert_edges_alphabetical(labels, props, edges):
 
     return edges
 
-
 def main():
     '''
     Map must only contain 0s or alphabetical values
     '''
-    symbol_grid, start, goal = load_symbol_map('maps/map_multiple_alpha_symbols_simple.csv')
+    symbol_grid, start, goal = load_symbol_map('maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv')
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
 
