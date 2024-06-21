@@ -10,6 +10,7 @@ from lomap.algorithms.product import ts_times_buchi
 from lomap.classes import Buchi, Ts
 
 EMPTY_SYMBOL='0'
+WALL_SYMBOL = '#'
 
 # Load map, start and goal point.
 def load_symbol_map(file_path):
@@ -38,7 +39,7 @@ def assign_props(grid):
     reduced = list(set(i for j in grid for i in j))
     reduced.sort()
 
-    single_chars=[x for x in reduced if len(x)==1] #by design, this removes {} as it is 2 chars
+    single_chars=[x for x in reduced if (len(x)==1 and x!=EMPTY_SYMBOL and x!=WALL_SYMBOL)]
     props['{}'] = 0
 
     for i in range(len(single_chars)):
@@ -211,6 +212,10 @@ def add_edge_labels(labels, edges):
     for edge in edges:
         edge.append({'pi':labels.get(str(edge))})
 
+def clean_clusters(clusters):
+    if WALL_SYMBOL in clusters.keys():
+        del clusters[WALL_SYMBOL]
+
 def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv"):
     '''
     Map must only contain empty set '{}' or alphabetical values
@@ -223,6 +228,7 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
 
     # draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
+    clean_clusters(clusters)
     print(f"Clusters: {clusters}")
     unique_clusters = each_cluster_uuid(clusters)
     print(f"Unique Clusters: {unique_clusters}")
@@ -280,10 +286,18 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
     def test_example_2(self):
+        nodes = ['0.0', '1', '4', '2', '0.1']
+        out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.1'), ('1', '0.0'), ('4', '0.0'), ('2', '0.1'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
+        in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2'), ('2', '0.1'), ('1', '0.1')]
         ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 5)
+        self.assertEqual(ts.g.number_of_edges(), 10)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
 
 if __name__ == '__main__':
     unittest.main()
-    # create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
     # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
