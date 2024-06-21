@@ -5,6 +5,7 @@ import math
 import copy
 import unittest
 import string
+from collections import Counter
 from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.algorithms.product import ts_times_buchi
 from lomap.classes import Buchi, Ts
@@ -145,7 +146,7 @@ def prune_labels(nodes, labels):
 
 '''
 CASES:
-1) if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
+1) if any outgoing edges share transition, remove it
 2) if there is an outgoing edge containing same label as node remove it 
 3) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
 4) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
@@ -154,12 +155,26 @@ etc
 
 def case_1(node, node_outgoing_labels, new_transition_dict):
     if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
-        node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()])
+
+
+        #if item duplicated in list of all edge labels concanated then it occurs on at least more than one edge
+        list_of_all_edge_values = [elem for sublist in list(node_outgoing_labels.values()) for elem in sublist]
+        node_outgoing_label_intersections = [k for k,v in Counter(list_of_all_edge_values).items() if v>1]
+
+        # node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()]) #this does not work because if 2/3 edges share label it won't recognize
         print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
         if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
             print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
 
-            #TODO: check if works with multiple intersection values
+            for edge in node_outgoing_labels.values():
+                for shared in node_outgoing_label_intersections:
+                    if shared in edge:
+                        edge.remove(shared)
+            
+            '''
+            This might be overly complicated:
+            description: if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
+
             for node_outgoing_label_intersection in node_outgoing_label_intersections:
 
                 print(f"node_outgoing_label_intersection: {node_outgoing_label_intersection}")
@@ -178,7 +193,8 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
                     # if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
                     step_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
                     new_transition_dict.update(step_transition_dict)
-                    print(f"new_transition_dict: {new_transition_dict}")     
+                    print(f"new_transition_dict: {new_transition_dict}")    
+            ''' 
 
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
@@ -296,8 +312,7 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
-
 if __name__ == '__main__':
-    unittest.main()
-    # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # unittest.main()
+    ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
     # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
