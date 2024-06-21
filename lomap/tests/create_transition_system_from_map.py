@@ -36,13 +36,13 @@ def load_symbol_map(file_path):
 def assign_props(grid):
     props = dict()
     reduced = list(set(i for j in grid for i in j))
-    reduced.remove(EMPTY_SYMBOL)
     reduced.sort()
 
-    single_values=[x for x in reduced if len(x)==1]
+    single_chars=[x for x in reduced if len(x)==1] #by design, this removes {} as it is 2 chars
+    props['{}'] = 0
 
-    for i in range(len(single_values)):
-        props[single_values[i]] = 2**i
+    for i in range(len(single_chars)):
+        props[single_chars[i]] = 2**i
 
     return props
 
@@ -53,17 +53,16 @@ def create_numerical_grid(props, symbol_grid):
     for row in range(len(symbol_grid)):
         for col in range(len(symbol_grid[0])):
             val = symbol_grid[row][col]
-            if val != EMPTY_SYMBOL:
-                if val in list(props.keys()):
-                    grid[row][col] = props.get(val)
-                elif len(val) > 1:
-                    sum = 0
-                    for letter in val:
-                        sum += props.get(letter)
-                    grid[row][col] = sum
-                    props[val] = sum
-                else:
-                    print("ERROR parsing grid from symbols to binary numerical translation")
+            if val in list(props.keys()):
+                grid[row][col] = props.get(val)
+            elif len(val) > 1:
+                sum = 0
+                for letter in val:
+                    sum += props.get(letter)
+                grid[row][col] = sum
+                props[val] = sum
+            else:
+                print("ERROR parsing grid from symbols to binary numerical translation")
     
     return grid
 
@@ -187,47 +186,22 @@ def case_2(simplfied_node_rep, node_outgoing_labels):
 
 def case_3(node_outgoing_labels):
     for key in node_outgoing_labels.keys():
-        if EMPTY_SYMBOL in node_outgoing_labels.get(key):
-            node_outgoing_labels.get(key).remove(EMPTY_SYMBOL)
-
-#FIXME: this assumes one empty set area, e.g. '0' not '0.0' and '0.1'
-def remove_empty_set(edges, clusters):
-    # del clusters[EMPTY_SYMBOL]
-    to_remove = list()
-    nodes_adjacent_to_empty = list()
-    for edge in edges:
-        if edge[0] == EMPTY_SYMBOL:
-            to_remove.append(edge)
-            nodes_adjacent_to_empty.append(edge[1])
-        elif edge[1] == EMPTY_SYMBOL:
-            to_remove.append(edge)
-            nodes_adjacent_to_empty.append(edge[0])
-    # edges = list(set(edges).difference(to_remove))
-    edges_pruned = [x for x in edges if x not in to_remove]
-    pairs = [[nodes_adjacent_to_empty[i], nodes_adjacent_to_empty[j]] for i in range(len(nodes_adjacent_to_empty)) for j in range(i+1, len(nodes_adjacent_to_empty))]
-    edges_pruned.extend(pairs)
-    return edges_pruned
+        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL in s]
+        for s in empty_symbols:
+            node_outgoing_labels.get(key).remove(s)
 
 def convert_edges_and_add_labels_alphabetical(labels, props, edges):
 
     num_to_alpha_prop = {v: k for k, v in props.items()}
     label_mapping = dict()
-    label_mapping[EMPTY_SYMBOL] = '{}'
-
-    #TODO: remove 0? make empty set???
-    #FIXMES: will need to replace 0 to get correct product
 
     for edge in edges:
         pi = labels.get(str(edge))
         for i in range(len(pi)):
-            if int(float(pi[i])) != 0:
-                pi[i] = num_to_alpha_prop.get(int(pi[i]))
+            pi[i] = num_to_alpha_prop.get(int(pi[i]))
 
-        if int(float(edge[0]))!=0:
-            label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
-
-        if int(float(edge[1]))!=0:
-            label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
+        label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
+        label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
 
         edge.append({'pi':pi, 'weight': 0})
 
@@ -239,12 +213,11 @@ def add_edge_labels(labels, edges):
 
 def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv"):
     '''
-    Map must only contain 0s or alphabetical values
+    Map must only contain empty set '{}' or alphabetical values
     '''
     symbol_grid, start, goal = load_symbol_map(map_path)
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
-    # grid, start, goal = load_map(map_path)
 
     print(f"replaced grid: {grid}")
 
@@ -267,8 +240,6 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
 
     G = nx.DiGraph()
 
-    #TODO: determine how to handle multiple nodes with same label
-    #FIXME: this will incorrectly override duplicate nodes, making them seem like the same node. For all node.uuid, the uuid is erased
     alphabetical_edges, label_mapping= convert_edges_and_add_labels_alphabetical(labels, props, edges)
 
     G.add_edges_from(edges)
