@@ -36,7 +36,7 @@ def load_symbol_map(file_path):
 def assign_props(grid):
     props = dict()
     reduced = list(set(i for j in grid for i in j))
-    reduced.remove("0")
+    reduced.remove(EMPTY_SYMBOL)
     reduced.sort()
 
     single_values=[x for x in reduced if len(x)==1]
@@ -53,7 +53,7 @@ def create_numerical_grid(props, symbol_grid):
     for row in range(len(symbol_grid)):
         for col in range(len(symbol_grid[0])):
             val = symbol_grid[row][col]
-            if val != "0": #empty
+            if val != EMPTY_SYMBOL:
                 if val in list(props.keys()):
                     grid[row][col] = props.get(val)
                 elif len(val) > 1:
@@ -212,7 +212,7 @@ def convert_edges_and_add_labels_alphabetical(labels, props, edges):
 
     num_to_alpha_prop = {v: k for k, v in props.items()}
     label_mapping = dict()
-    label_mapping['0'] = '{}'
+    label_mapping[EMPTY_SYMBOL] = '{}'
 
     #TODO: remove 0? make empty set???
     #FIXMES: will need to replace 0 to get correct product
@@ -308,6 +308,11 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
+    def test_example_2(self):
+        ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+
+
 if __name__ == '__main__':
     unittest.main()
     # create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
