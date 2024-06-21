@@ -3,6 +3,8 @@ from create_graph_from_map import *
 import networkx as nx
 import math
 import copy
+import unittest
+import string
 from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.algorithms.product import ts_times_buchi
 from lomap.classes import Buchi, Ts
@@ -206,9 +208,11 @@ def remove_empty_set(edges, clusters):
     edges_pruned.extend(pairs)
     return edges_pruned
 
-def convert_edges_alphabetical(labels, props, edges):
+def convert_edges_and_add_labels_alphabetical(labels, props, edges):
 
     num_to_alpha_prop = {v: k for k, v in props.items()}
+    label_mapping = dict()
+    label_mapping['0'] = '{}'
 
     #TODO: remove 0? make empty set???
     #FIXMES: will need to replace 0 to get correct product
@@ -220,20 +224,27 @@ def convert_edges_alphabetical(labels, props, edges):
                 pi[i] = num_to_alpha_prop.get(int(pi[i]))
 
         if int(float(edge[0]))!=0:
-            edge[0] = num_to_alpha_prop.get(int(float(edge[0])))
+            label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
+
         if int(float(edge[1]))!=0:
-            edge[1] = num_to_alpha_prop.get(int(float(edge[1])))
+            label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
+
         edge.append({'pi':pi, 'weight': 0})
 
-    return edges
+    return edges, label_mapping
 
-def main():
+def add_edge_labels(labels, edges):
+    for edge in edges:
+        edge.append({'pi':labels.get(str(edge))})
+
+def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv"):
     '''
     Map must only contain 0s or alphabetical values
     '''
-    symbol_grid, start, goal = load_symbol_map('maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv')
+    symbol_grid, start, goal = load_symbol_map(map_path)
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
+    # grid, start, goal = load_map(map_path)
 
     print(f"replaced grid: {grid}")
 
@@ -258,22 +269,13 @@ def main():
 
     #TODO: determine how to handle multiple nodes with same label
     #FIXME: this will incorrectly override duplicate nodes, making them seem like the same node. For all node.uuid, the uuid is erased
-    alphabetical_edges = convert_edges_alphabetical(labels, props, edges)
+    alphabetical_edges, label_mapping= convert_edges_and_add_labels_alphabetical(labels, props, edges)
 
-    G.add_edges_from(alphabetical_edges)
-
-    ts = Ts(directed=True, multi=False)
-    for key in copy.deepcopy(G.nodes.keys()):
-        G.add_node(key, prop=key)
-    ts.g = G
-    ts.init = {'c'}
-
-    draw_graph(G)
-
+    G.add_edges_from(edges)
 
     '''
     Create transition system example:
-        ts = Ts(directed=True, multi=False)
+        ts = Ts(directed=True, multi=False)add_edges_from
         ts.g = nx.grid_2d_graph(4, 3)
 
         ts.init[(1, 1)] = 1
@@ -284,19 +286,28 @@ def main():
         ts.g.add_edges_from(ts.g.edges(), weight=1)
     '''
 
-    spec = 'F a'
-    buchi = Buchi()
-    buchi.from_formula(spec)
-    print('Created Buchi automaton of size', buchi.size())
-    buchi.visualize(draw='matplotlib')
-    plt.show()
+    ts = Ts(directed=True, multi=False)
+    for key in copy.deepcopy(G.nodes.keys()):
+        G.add_node(key, prop=key)
+    ts.g = G
+    ts.init = {'c'}
 
-    pa = ts_times_buchi(ts, buchi)
-    print('Created product automaton of size', pa.size())
-    pa.visualize(draw='matplotlib')
-    plt.show()
+    draw_graph(G, label_mapping)
 
+    return ts
+
+class TestTSCreation(unittest.TestCase):
+    def test_example_1(self):
+        nodes = ['0', '1.1', '1.0', '2', '4']
+        out_edges = [('0', '1.0'), ('0', '1.1'), ('1.0', '2'), ('1.0', '0'), ('1.1', '4'), ('1.1', '0'), ('2', '1.0'), ('4', '1.1')]
+        in_edges = [('1.1', '0'), ('1.0', '0'), ('0', '1.0'), ('2', '1.0'), ('0', '1.1'), ('4', '1.1'), ('1.0', '2'), ('1.1', '4')]
+        ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 5)
+        self.assertEqual(ts.g.number_of_edges(), 8)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
 if __name__ == '__main__':
-    
-    main()
+    unittest.main()
+    # create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')

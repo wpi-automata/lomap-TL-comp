@@ -76,15 +76,12 @@ def is_neighbor(r,c,cluster):
 def connected(a, b):
     return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1. #if they are next to each other they will be 1 unit away
 
-def draw_graph(nx_graph):
-    # fig, axes = plt.subplots(1,1,dpi=72)
-    # nx.draw(nx_graph, pos=nx.spring_layout(nx_graph), ax=axes, labels={node: node for node in nx_graph.nodes()}, with_labels=True)
-    # plt.show()
+def draw_graph(nx_graph, labels=None):
     
-    pos=nx.spring_layout(nx_graph)
+    pos = nx.nx_agraph.graphviz_layout(nx_graph, prog="neato")
     fig, ax = plt.subplots()
     nx.draw_networkx_nodes(nx_graph, pos, ax=ax)
-    nx.draw_networkx_labels(nx_graph, pos, ax=ax)
+    nx.draw_networkx_labels(nx_graph, pos, labels=labels, ax=ax)
 
     curved_edges = [edge for edge in nx_graph.edges() if reversed(edge) in nx_graph.edges()]
     straight_edges = list(set(nx_graph.edges()) - set(curved_edges))
@@ -322,5 +319,5 @@ class TestStringMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     
-    unittest.main()
-    # main()
+    # unittest.main()
+    main()
