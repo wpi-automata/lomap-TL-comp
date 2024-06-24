@@ -97,6 +97,10 @@ class Model(object):
             pos = nx.spring_layout(self.g)
             nx.draw(self.g, pos=pos)
             nx.draw_networkx_labels(self.g, pos=pos)
+
+            # labels = nx.get_edge_attributes(self.g,'label')
+            # nx.draw_networkx_nodes(self.g, pos=pos)
+            # nx.draw_networkx_labels(self.g, pos=pos, labels=labels)
             # nx.draw_networkx_edge_labels(self.g, pos=pos, edge_labels='0')
         else:
             raise ValueError('Expected parameter draw to be either:'

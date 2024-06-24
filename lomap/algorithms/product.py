@@ -255,7 +255,7 @@ def ts_times_fsa(ts, fsa, from_current=False, expand_finals=True,
 
     return product_model
 
-def ts_times_buchi(ts, buchi):
+def ts_times_buchi(ts, buchi, ts_props={}):
     '''TODO:
     add option to choose what to save on the automaton's
     add description
@@ -268,17 +268,32 @@ def ts_times_buchi(ts, buchi):
 
     # Iterate over initial states of the TS
     init_states = []
+    inv_ts_props = {v: k for k, v in ts_props.items()}
+
     for init_ts in ts.init:
-        init_prop = ts.g.nodes[init_ts].get('prop',set())
+        if ts_props:
+            if str(ts_props[init_ts]) not in ts.g.nodes():
+                init_ts = str(float(ts_props[init_ts]))
+            else:
+                init_ts = str(ts_props[init_ts])
+        init_prop =  ts.g.nodes[init_ts].get('prop',set())
         # Iterate over the initial states of the FSA
         for init_buchi in buchi.init:
             # Add the initial states to the graph and mark them as initial
             for act_init_buchi in buchi.next_states(init_buchi, init_prop):
                 init_state = (init_ts, act_init_buchi)
                 init_states.append(init_state)
-                product_model.init[init_state] = 1
+                product_model.init[init_state] = 1 
+
+                # if ts_props:
+                #     if str(ts_props[init_state]) not in ts.g.nodes():
+                #         init_state_label = str(float(ts_props[init_state]))
+                #     else:
+                #         init_state_label = str(ts_props[init_state])
+                # init_state_label = init_state
+
                 attr_dict = {'prop': init_prop,
-                        'label': '{}\\n{}'.format(init_state,list(init_prop))}
+                        'label': '{}\\n{}'.format((init_prop, init_state[1]),list(init_prop))}
                 product_model.g.add_node(init_state, attr_dict=attr_dict)
                 if act_init_buchi in buchi.final:
                     product_model.final.add(init_state)
@@ -308,9 +323,16 @@ def ts_times_buchi(ts, buchi):
                 if(next_state not in product_model.g):
                     next_prop = ts.g.nodes[ts_next_state].get('prop',set())
 
+                    # if ts_props:
+                    #     if str(ts_props[next_state]) not in ts.g.nodes():
+                    #         next_state_label = str(float(ts_props[next_state]))
+                    #     else:
+                    #         next_state_label = str(ts_props[next_state])
+                    # next_state_label = next_state
+
                     # Add the new state
                     attr_dict = {'prop': next_prop,
-                        'label': '{}\\n{}'.format(next_state, list(next_prop))}
+                        'label': '{}\\n{}'.format((next_prop, next_state[1]), list(next_prop))}
                     product_model.g.add_node(next_state, attr_dict=attr_dict)
 
                     # Add transition w/ weight

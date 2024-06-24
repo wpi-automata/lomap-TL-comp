@@ -232,7 +232,7 @@ def clean_clusters(clusters):
     if WALL_SYMBOL in clusters.keys():
         del clusters[WALL_SYMBOL]
 
-def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv"):
+def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv", init_node='a'):
     '''
     Map must only contain empty set '{}' or alphabetical values
     '''
@@ -279,22 +279,24 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
         ts.g.add_edges_from(ts.g.edges(), weight=1)
     '''
 
+    inv_props = {v: k for k, v in props.items()}
+
     ts = Ts(directed=True, multi=False)
     for key in copy.deepcopy(G.nodes.keys()):
-        G.add_node(key, prop=key)
+        G.add_node(key, prop=inv_props[int(float(key))])
     ts.g = G
-    ts.init = {'c'}
+    ts.init = {init_node}
 
     draw_graph(G, label_mapping)
 
-    return ts
+    return ts, props
 
 class TestTSCreation(unittest.TestCase):
     def test_example_1(self):
         nodes = ['0', '1.1', '1.0', '2', '4']
         out_edges = [('0', '1.0'), ('0', '1.1'), ('1.0', '2'), ('1.0', '0'), ('1.1', '4'), ('1.1', '0'), ('2', '1.0'), ('4', '1.1')]
         in_edges = [('1.1', '0'), ('1.0', '0'), ('0', '1.0'), ('2', '1.0'), ('0', '1.1'), ('4', '1.1'), ('1.0', '2'), ('1.1', '4')]
-        ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
         self.assertEqual(ts.g.number_of_nodes(), 5)
         self.assertEqual(ts.g.number_of_edges(), 8)
         self.assertTrue(set(ts.g.nodes()) == set(nodes))
@@ -305,7 +307,7 @@ class TestTSCreation(unittest.TestCase):
         nodes = ['0.0', '1', '4', '2', '0.1']
         out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.1'), ('1', '0.0'), ('4', '0.0'), ('2', '0.1'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
         in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2'), ('2', '0.1'), ('1', '0.1')]
-        ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
         self.assertEqual(ts.g.number_of_nodes(), 5)
         self.assertEqual(ts.g.number_of_edges(), 10)
         self.assertTrue(set(ts.g.nodes()) == set(nodes))
@@ -313,6 +315,6 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
 if __name__ == '__main__':
-    # unittest.main()
-    ts = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
-    # ts = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+    unittest.main()
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
