@@ -96,7 +96,9 @@ class Model(object):
             nx.draw(A)
         elif draw == 'matplotlib':
             pos = nx.spring_layout(self.g)
-            nx.draw(self.g, pos=pos)
+
+            nx.draw_networkx_nodes(self.g, pos)
+            nx.draw_networkx_edges(self.g, pos, edgelist=self.g.edges())
         
             labels = {n: d['attr_dict']['abbrev_label'] for n, d in self.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
 

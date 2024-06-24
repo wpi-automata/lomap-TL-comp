@@ -13,17 +13,18 @@ def main():
     buchi.visualize(draw='matplotlib')
     plt.show()
 
-    pa = ts_times_buchi(ts, buchi, ts_props)
+    pa = ts_times_buchi(ts, buchi, ts_props, multi=False)
     print('Created product automaton of size', pa.size())
 
-    e = pa.g.edges()
+    #Add policy labels from transition system to product automaton
+    labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
     ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
-    pa_edges = dict()
-    for edge in e:
-        if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
-            pa_edges[edge] = ts_edge_policies[(edge[0][0], edge[1][0])]
 
-    pa.visualize(draw='matplotlib', edgelabel=pa_edges)
+    for edge in pa.g.edges():
+        if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
+            pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
+        
+    draw_graph(pa.g, labels=labels)
     plt.show()
 
 

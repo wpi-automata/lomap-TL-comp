@@ -255,7 +255,7 @@ def ts_times_fsa(ts, fsa, from_current=False, expand_finals=True,
 
     return product_model
 
-def ts_times_buchi(ts, buchi, ts_props={}):
+def ts_times_buchi(ts, buchi, ts_props={}, multi=True):
     '''TODO:
     add option to choose what to save on the automaton's
     add description
@@ -264,7 +264,7 @@ def ts_times_buchi(ts, buchi, ts_props={}):
     '''
 
     # Create the product_model
-    product_model = Model()
+    product_model = Model(multi=multi)
 
     # Iterate over initial states of the TS
     init_states = []
