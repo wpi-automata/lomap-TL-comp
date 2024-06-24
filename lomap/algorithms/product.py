@@ -285,15 +285,8 @@ def ts_times_buchi(ts, buchi, ts_props={}):
                 init_states.append(init_state)
                 product_model.init[init_state] = 1 
 
-                # if ts_props:
-                #     if str(ts_props[init_state]) not in ts.g.nodes():
-                #         init_state_label = str(float(ts_props[init_state]))
-                #     else:
-                #         init_state_label = str(ts_props[init_state])
-                # init_state_label = init_state
-
-                attr_dict = {'prop': init_prop,
-                        'label': '{}\\n{}'.format((init_prop, init_state[1]),list(init_prop))}
+                attr_dict = {'prop': init_prop, 'abbrev_label': '{}'.format((init_prop, init_state[1])),
+                        'label': '{}\\n{}'.format(init_state,list(init_prop))}
                 product_model.g.add_node(init_state, attr_dict=attr_dict)
                 if act_init_buchi in buchi.final:
                     product_model.final.add(init_state)
@@ -323,16 +316,9 @@ def ts_times_buchi(ts, buchi, ts_props={}):
                 if(next_state not in product_model.g):
                     next_prop = ts.g.nodes[ts_next_state].get('prop',set())
 
-                    # if ts_props:
-                    #     if str(ts_props[next_state]) not in ts.g.nodes():
-                    #         next_state_label = str(float(ts_props[next_state]))
-                    #     else:
-                    #         next_state_label = str(ts_props[next_state])
-                    # next_state_label = next_state
-
                     # Add the new state
-                    attr_dict = {'prop': next_prop,
-                        'label': '{}\\n{}'.format((next_prop, next_state[1]), list(next_prop))}
+                    attr_dict = {'prop': next_prop, 'abbrev_label': '{}'.format((ts_next_prop, next_state[1])),
+                        'label': '{}\\n{}'.format(next_state, list(next_prop))}
                     product_model.g.add_node(next_state, attr_dict=attr_dict)
 
                     # Add transition w/ weight

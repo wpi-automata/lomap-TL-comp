@@ -96,12 +96,14 @@ class Model(object):
         elif draw == 'matplotlib':
             pos = nx.spring_layout(self.g)
             nx.draw(self.g, pos=pos)
-            nx.draw_networkx_labels(self.g, pos=pos)
+        
+            labels = {n: d['attr_dict']['abbrev_label'] for n, d in self.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
 
-            # labels = nx.get_edge_attributes(self.g,'label')
-            # nx.draw_networkx_nodes(self.g, pos=pos)
-            # nx.draw_networkx_labels(self.g, pos=pos, labels=labels)
-            # nx.draw_networkx_edge_labels(self.g, pos=pos, edge_labels='0')
+            if labels:
+                nx.draw_networkx_labels(self.g, pos=pos, labels=labels)
+            else:            
+                nx.draw_networkx_labels(self.g, pos=pos)
+                
         else:
             raise ValueError('Expected parameter draw to be either:'
                              + '"pygraphviz" or "matplotlib"!')

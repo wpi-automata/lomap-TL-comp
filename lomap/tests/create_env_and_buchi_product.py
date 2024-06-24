@@ -4,7 +4,7 @@ def main():
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv', 'a')
+    ts, ts_props = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv', 'b')
 
     spec = 'F a'
     buchi = Buchi()
