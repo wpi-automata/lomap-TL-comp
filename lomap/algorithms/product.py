@@ -292,11 +292,15 @@ def ts_times_buchi(ts, buchi, ts_props={}):
                 #         init_state_label = str(ts_props[init_state])
                 # init_state_label = init_state
 
+                # state_label = int(float(inv_ts_props[init_state[1]]))
+
+                revised_init_state = (init_prop, init_state[1])
+
                 attr_dict = {'prop': init_prop,
-                        'label': '{}\\n{}'.format((init_prop, init_state[1]),list(init_prop))}
-                product_model.g.add_node(init_state, attr_dict=attr_dict)
+                        'label': '{}\\n{}'.format(revised_init_state,list(init_prop))}
+                product_model.g.add_node(revised_init_state, attr_dict=attr_dict)
                 if act_init_buchi in buchi.final:
-                    product_model.final.add(init_state)
+                    product_model.final.add(revised_init_state)
 
     # Add all initial states to the stack
     stack = []
@@ -308,6 +312,15 @@ def ts_times_buchi(ts, buchi, ts_props={}):
         cur_state = stack.pop()
         ts_state = cur_state[0]
         buchi_state = cur_state[1]
+
+        if ts_props:
+            if str(ts_props[ts_state]) not in ts.g.nodes():
+                ts_state = str(float(ts_props[ts_state]))
+            else:
+                ts_state = str(ts_props[ts_state])
+
+        cur_prop = ts.g.nodes[ts_state].get('prop',set())
+        revised_cur_state = (cur_prop, cur_state[1])
 
         for ts_next in ts.next_states_of_wts(ts_state, traveling_states=False):
             ts_next_state = ts_next[0]
@@ -330,26 +343,30 @@ def ts_times_buchi(ts, buchi, ts_props={}):
                     #         next_state_label = str(ts_props[next_state])
                     # next_state_label = next_state
 
+                    # next_state_label = int(float(inv_ts_props[next_state[1]]))
+
+                    revised_next_state = (next_prop, next_state[1])
+
                     # Add the new state
                     attr_dict = {'prop': next_prop,
-                        'label': '{}\\n{}'.format((next_prop, next_state[1]), list(next_prop))}
-                    product_model.g.add_node(next_state, attr_dict=attr_dict)
+                        'label': '{}\\n{}'.format(revised_next_state, list(next_prop))}
+                    product_model.g.add_node(revised_next_state, attr_dict=attr_dict)
 
                     # Add transition w/ weight
                     attr_dict = {'weight': weight, 'control': control}
-                    product_model.g.add_edge(cur_state, next_state,
+                    product_model.g.add_edge(revised_cur_state, revised_next_state,
                                              attr_dict=attr_dict)
 
                     # Mark as final if final in buchi
                     if buchi_next_state in buchi.final:
-                        product_model.final.add(next_state)
+                        product_model.final.add(revised_next_state)
 
                     # Continue search from next state
-                    stack.append(next_state)
+                    stack.append(revised_next_state)
 
-                elif(next_state not in product_model.g[cur_state]):
+                elif(revised_next_state not in product_model.g[revised_cur_state]):
                     attr_dict = {'weight': weight, 'control': control}
-                    product_model.g.add_edge(cur_state, next_state,
+                    product_model.g.add_edge(revised_cur_state, revised_next_state,
                                              attr_dict=attr_dict)
 
     return product_model
