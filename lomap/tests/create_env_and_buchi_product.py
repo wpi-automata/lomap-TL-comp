@@ -15,7 +15,15 @@ def main():
 
     pa = ts_times_buchi(ts, buchi, ts_props)
     print('Created product automaton of size', pa.size())
-    pa.visualize(draw='matplotlib') #TODO: edgelabel prarameter can be used to add policies on edges
+
+    e = pa.g.edges()
+    ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
+    pa_edges = dict()
+    for edge in e:
+        if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
+            pa_edges[edge] = ts_edge_policies[(edge[0][0], edge[1][0])]
+
+    pa.visualize(draw='matplotlib', edgelabel=pa_edges)
     plt.show()
 
 
