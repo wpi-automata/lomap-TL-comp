@@ -43,7 +43,8 @@ Linux (Ubuntu)
     pip install matplotlib
     pip install numpy
     sudo apt install python-tk
-    pip install networkx==1.11
+    pip install networkx==3.1
+    pip install pygraphviz
     pip install pyyaml
     pip install pp # Optional
     apt install cmake
