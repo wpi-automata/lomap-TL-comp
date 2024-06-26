@@ -5,6 +5,7 @@ File Descriptions:
 
 * `test_tl_composition_graph_traversal`. Uses logic from `test_map_word_accepted.py` and `test_map_word_accepted_randomized_occupancy_grid.py` to create an FSA from a spec using LOMAP. Creates a transition graph from an occupancy grid representation. Work in progress.
 
-* `map.csv`. Map containing spacecs with single symbols, e.g. A or B.
+* `maps/numerical_maps/*`. Maps containing spaces with single and multiple symbols using numerical re
+presentation of symbols e.g. 1=A, 2=B, 3=A&B. levels are related to complexity of map.
 
-* `map_multiple_symbols.csv`. Map containing spaces with single and multiple symbols e.g. A, B, A&B.
+* `maps/alphabetical_maps/*`. Maps containing spaces with single and multiple symbols using numerical re presentation of symbols e.g. A, B, AB for A&B

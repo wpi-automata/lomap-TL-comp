@@ -76,15 +76,12 @@ def is_neighbor(r,c,cluster):
 def connected(a, b):
     return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1. #if they are next to each other they will be 1 unit away
 
-def draw_graph(nx_graph):
-    # fig, axes = plt.subplots(1,1,dpi=72)
-    # nx.draw(nx_graph, pos=nx.spring_layout(nx_graph), ax=axes, labels={node: node for node in nx_graph.nodes()}, with_labels=True)
-    # plt.show()
+def draw_graph(nx_graph, labels=None):
     
-    pos=nx.spring_layout(nx_graph)
+    pos = nx.nx_agraph.graphviz_layout(nx_graph, prog="neato")
     fig, ax = plt.subplots()
     nx.draw_networkx_nodes(nx_graph, pos, ax=ax)
-    nx.draw_networkx_labels(nx_graph, pos, ax=ax)
+    nx.draw_networkx_labels(nx_graph, pos, labels=labels, ax=ax)
 
     curved_edges = [edge for edge in nx_graph.edges() if reversed(edge) in nx_graph.edges()]
     straight_edges = list(set(nx_graph.edges()) - set(curved_edges))
@@ -92,9 +89,9 @@ def draw_graph(nx_graph):
     arc_rad = 0.25
     nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=curved_edges, connectionstyle=f'arc3, rad = {arc_rad}')
 
-    edge_weights = nx.get_edge_attributes(nx_graph,'pi')
-    curved_edge_labels = {edge: edge_weights[edge] for edge in curved_edges}
-    straight_edge_labels = {edge: edge_weights[edge] for edge in straight_edges}
+    edge_labels = nx.get_edge_attributes(nx_graph,'pi')
+    curved_edge_labels = {edge: edge_labels[edge] for edge in curved_edges}
+    straight_edge_labels = {edge: edge_labels[edge] for edge in straight_edges}
     my_draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=curved_edge_labels,rotate=False,rad = arc_rad)
     nx.draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=straight_edge_labels,rotate=False)
     
@@ -274,7 +271,7 @@ def my_draw_networkx_edge_labels(
 
 
 def main():
-    grid, start, goal = load_map('maps/map_multiple_symbols_BCD.csv')
+    grid, start, goal = load_map('maps/numerical_maps/map_multiple_symbols_BCD.csv')
     draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
     print(f"Clusters: {clusters}")
@@ -297,23 +294,23 @@ def main():
 class TestStringMethods(unittest.TestCase):
 
     def test_edges_symbol_not_touching_empty(self):
-        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
+        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
 
     def test_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
+        self.assertEqual(len(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
 
     def test_unique_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
+        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
 
     def test_graph_symbol_not_touching_empty(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_2_encased.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 4)
         self.assertEqual(G.number_of_edges(), 3)
 
     def test_graph_multiple_groupings_same_symbol(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/map_multiple_2_groups.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 5)

@@ -3,8 +3,71 @@ from create_graph_from_map import *
 import networkx as nx
 import math
 import copy
+import unittest
+import string
+from collections import Counter
 from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.algorithms.product import ts_times_buchi
+from lomap.classes import Buchi, Ts
+
+EMPTY_SYMBOL='0'
+WALL_SYMBOL = '#'
+
+# Load map, start and goal point.
+def load_symbol_map(file_path):
+    grid = []
+    start = [0, 0]
+    goal = [0, 0]
+    # Load from the file
+    with open(file_path, 'r') as map_file:
+        reader = csv.reader(map_file)
+        for i, row in enumerate(reader):
+            # load start and goal point
+            if i == 0:
+                start[0] = int(row[1])
+                start[1] = int(row[2])
+            elif i == 1:
+                goal[0] = int(row[1])
+                goal[1] = int(row[2])
+            # load the map
+            else:
+                parsed_row = [col for col in row]
+                grid.append(parsed_row)
+    return grid, start, goal
+
+def assign_props(grid):
+    props = dict()
+    reduced = list(set(i for j in grid for i in j))
+    reduced.sort()
+
+    single_chars=[x for x in reduced if (len(x)==1 and x!=EMPTY_SYMBOL and x!=WALL_SYMBOL)]
+    props['{}'] = 0
+
+    for i in range(len(single_chars)):
+        props[single_chars[i]] = 2**i
+
+    return props
+
+def create_numerical_grid(props, symbol_grid):
+
+    grid = copy.deepcopy(symbol_grid)
+
+    for row in range(len(symbol_grid)):
+        for col in range(len(symbol_grid[0])):
+            val = symbol_grid[row][col]
+            if val in list(props.keys()):
+                grid[row][col] = props.get(val)
+            elif len(val) > 1:
+                sum = 0
+                for letter in val:
+                    sum += props.get(letter)
+                grid[row][col] = sum
+                props[val] = sum
+            else:
+                print("ERROR parsing grid from symbols to binary numerical translation")
+    
+    return grid
+
 
 def create_transitions(G, edges, nodes):
 
@@ -57,6 +120,7 @@ def prune_labels(nodes, labels):
         node_outgoing_labels = dict()
         simplfied_node_rep = str(math.floor(float(node)))
 
+        #TODO: comment what this does
         for label_key in label_keys:
 
             label_key_list = label_key.strip('][\'\"').split('\', \'')
@@ -66,7 +130,8 @@ def prune_labels(nodes, labels):
         new_transition_dict = dict()
 
         case_1(node, node_outgoing_labels, new_transition_dict)
-        case_2(simplfied_node_rep, node_outgoing_labels)        
+        case_2(simplfied_node_rep, node_outgoing_labels)
+        case_3(node_outgoing_labels)
 
         if not new_transition_dict:
             step_transition_dict = {k:[item for item in v] for (k,v) in node_outgoing_labels.items()}
@@ -81,7 +146,7 @@ def prune_labels(nodes, labels):
 
 '''
 CASES:
-1) if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
+1) if any outgoing edges share transition, remove it
 2) if there is an outgoing edge containing same label as node remove it 
 3) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
 4) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
@@ -90,12 +155,26 @@ etc
 
 def case_1(node, node_outgoing_labels, new_transition_dict):
     if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
-        node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()])
+
+
+        #if item duplicated in list of all edge labels concanated then it occurs on at least more than one edge
+        list_of_all_edge_values = [elem for sublist in list(node_outgoing_labels.values()) for elem in sublist]
+        node_outgoing_label_intersections = [k for k,v in Counter(list_of_all_edge_values).items() if v>1]
+
+        # node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()]) #this does not work because if 2/3 edges share label it won't recognize
         print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
         if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
             print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
 
-            #TODO: check if works with multiple intersection values
+            for edge in node_outgoing_labels.values():
+                for shared in node_outgoing_label_intersections:
+                    if shared in edge:
+                        edge.remove(shared)
+            
+            '''
+            This might be overly complicated:
+            description: if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
+
             for node_outgoing_label_intersection in node_outgoing_label_intersections:
 
                 print(f"node_outgoing_label_intersection: {node_outgoing_label_intersection}")
@@ -114,18 +193,58 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
                     # if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
                     step_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
                     new_transition_dict.update(step_transition_dict)
-                    print(f"new_transition_dict: {new_transition_dict}")     
+                    print(f"new_transition_dict: {new_transition_dict}")    
+            ''' 
 
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
             if simplfied_node_rep in node_outgoing_labels.get(key):
-                node_outgoing_labels.get(key).remove(simplfied_node_rep)               
+                node_outgoing_labels.get(key).remove(simplfied_node_rep)    
 
+def case_3(node_outgoing_labels):
+    for key in node_outgoing_labels.keys():
+        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL in s]
+        for s in empty_symbols:
+            node_outgoing_labels.get(key).remove(s)
 
-def main():
-    grid, start, goal = load_map('maps/map_multiple_symbols_BCD.csv')
+def convert_edges_and_add_labels_alphabetical(labels, props, edges):
+
+    num_to_alpha_prop = {v: k for k, v in props.items()}
+    label_mapping = dict()
+
+    for edge in edges:
+        pi = labels.get(str(edge))
+        for i in range(len(pi)):
+            pi[i] = num_to_alpha_prop.get(int(pi[i]))
+
+        label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
+        label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
+
+        edge.append({'pi':pi, 'weight': 0})
+
+    return edges, label_mapping
+
+def add_edge_labels(labels, edges):
+    for edge in edges:
+        edge.append({'pi':labels.get(str(edge))})
+
+def clean_clusters(clusters):
+    if WALL_SYMBOL in clusters.keys():
+        del clusters[WALL_SYMBOL]
+
+def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv", init_node='a'):
+    '''
+    Map must only contain empty set '{}' or alphabetical values
+    '''
+    symbol_grid, start, goal = load_symbol_map(map_path)
+    props = assign_props(symbol_grid)
+    grid = create_numerical_grid(props, symbol_grid)
+
+    print(f"replaced grid: {grid}")
+
     # draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
+    clean_clusters(clusters)
     print(f"Clusters: {clusters}")
     unique_clusters = each_cluster_uuid(clusters)
     print(f"Unique Clusters: {unique_clusters}")
@@ -135,37 +254,67 @@ def main():
     print(f"Reversed Edges: {reversed_edges}")
     edges.extend(reversed_edges)
 
-    G = nx.DiGraph()
-    G.add_edges_from(edges)
+    intermediate_G = nx.DiGraph()
+    intermediate_G.add_edges_from(edges)
     
-    labels = create_transitions(G, edges, list(unique_clusters.keys()))
+    labels = create_transitions(intermediate_G, edges, list(unique_clusters.keys()))
     labels = prune_labels(list(unique_clusters.keys()), labels)
 
-    G.remove_edges_from(edges)
+    G = nx.DiGraph()
 
-    for edge in edges:
-        edge.append({'pi':labels.get(str(edge))})
+    alphabetical_edges, label_mapping= convert_edges_and_add_labels_alphabetical(labels, props, edges)
+
     G.add_edges_from(edges)
 
-    draw_graph(G)
+    '''
+    Create transition system example:
+        ts = Ts(directed=True, multi=False)add_edges_from
+        ts.g = nx.grid_2d_graph(4, 3)
 
-    #TODO: replace numerical labels with alphabetical labels from FSA
+        ts.init[(1, 1)] = 1
 
-    fsa = make_fsa(['F a && F !b'])  # WARNING!!! FSA randomly assigns numbers to A and B, and since map CSV uses numerical values, ensure map representation matches props
-    props = {v: k for k, v in fsa.props.items()}
+        ts.g.add_node((0, 0), attr_dict={'prop': set(['a'])})
+        ts.g.add_node((3, 2), attr_dict={'prop': set(['b'])})
 
-    fsa.visualize(edgelabel='props', draw='matplotlib') #this only shows states not the transitions between
-    plt.show()
+        ts.g.add_edges_from(ts.g.edges(), weight=1)
+    '''
 
-    pa = ts_times_buchi(G, fsa)
-    print('Created product automaton of size', pa.size())
-    pa.visualize(draw='matplotlib')
-    plt.show()
+    inv_props = {v: k for k, v in props.items()}
 
-    # print('Is FSA deterministic:', fsa.is_deterministic())
+    ts = Ts(directed=True, multi=False)
+    for key in copy.deepcopy(G.nodes.keys()):
+        G.add_node(key, prop=inv_props[int(float(key))])
+    ts.g = G
+    ts.init = {init_node}
 
+    draw_graph(G, label_mapping)
 
+    return ts, props
+
+class TestTSCreation(unittest.TestCase):
+    def test_example_1(self):
+        nodes = ['0', '1.1', '1.0', '2', '4']
+        out_edges = [('0', '1.0'), ('0', '1.1'), ('1.0', '2'), ('1.0', '0'), ('1.1', '4'), ('1.1', '0'), ('2', '1.0'), ('4', '1.1')]
+        in_edges = [('1.1', '0'), ('1.0', '0'), ('0', '1.0'), ('2', '1.0'), ('0', '1.1'), ('4', '1.1'), ('1.0', '2'), ('1.1', '4')]
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 5)
+        self.assertEqual(ts.g.number_of_edges(), 8)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+
+    def test_example_2(self):
+        nodes = ['0.0', '1', '4', '2', '0.1']
+        out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.1'), ('1', '0.0'), ('4', '0.0'), ('2', '0.1'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
+        in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2'), ('2', '0.1'), ('1', '0.1')]
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 5)
+        self.assertEqual(ts.g.number_of_edges(), 10)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
 if __name__ == '__main__':
-    
-    main()
+    unittest.main()
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')

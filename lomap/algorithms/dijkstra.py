@@ -329,8 +329,8 @@ def source_to_target_dijkstra(G, source, target, combine_fn='sum',
 			# Add all neighbors of source to start the algorithm
 			paths = dict()
 			seen = dict()
-			for _, w, edgedata in G.edges_iter([source], data=True):
-				vw_dist = edgedata[weight_key]
+			for _, w, edgedata in G.edges([source], data=True):
+				vw_dist = edgedata['attr_dict'][weight_key]
 				paths[w] = [source, w]
 				seen[w] = vw_dist
 				heapq.heappush(fringe,(vw_dist,w))
@@ -345,8 +345,8 @@ def source_to_target_dijkstra(G, source, target, combine_fn='sum',
 			if v == target:
 				break	# Discovered path to target node
 
-			for _, w, edgedata in G.edges_iter([v], data=True):
-				vw_dist = dist[v] + edgedata[weight_key]
+			for _, w, edgedata in G.edges([v], data=True):
+				vw_dist = dist[v] + edgedata['attr_dict'][weight_key]
 				if cutoff is not None:
 					if vw_dist>cutoff:
 						continue	# Longer than cutoff, ignore this path
@@ -383,7 +383,7 @@ def source_to_target_dijkstra(G, source, target, combine_fn='sum',
 			# Add all neighbors of source to start the algorithm
 			paths = dict()
 			seen = dict()
-			for _, w, edgedata in G.edges_iter([source], data=True):
+			for _, w, edgedata in G.edges([source], data=True):
 				vw_dist = edgedata[weight_key]
 				paths[w] = [source, w]
 				seen[w] = (vw_dist, vw_dist)
@@ -399,7 +399,7 @@ def source_to_target_dijkstra(G, source, target, combine_fn='sum',
 			if v == target:
 				break	# Discovered path to target node
 
-			for _, w, edgedata in G.edges_iter([v], data=True):
+			for _, w, edgedata in G.edges([v], data=True):
 				vw_dist_bot = max(dist[v][0], edgedata[weight_key])
 				vw_dist_sum = dist[v][1] + edgedata[weight_key]
 				if cutoff is not None:

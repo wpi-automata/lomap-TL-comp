@@ -166,8 +166,7 @@ Edges: {edges}
         # Get the bitmap representation of props
         prop_bitmap = self.bitmap_of_props(props)
         # Return an array of next states
-        return [v for _, v, d in self.g.out_edges_iter(q, data=True)
-                                                   if prop_bitmap in d['input']]
+        return [v for _, v, d in self.g.out_edges(q, data=True) if prop_bitmap in d['attr_dict']['input']]
 
     def next_state(self, q, props):
         """
