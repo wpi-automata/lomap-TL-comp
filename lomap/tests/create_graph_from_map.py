@@ -44,24 +44,28 @@ def each_cluster_uuid(clusters):
 
 def create_clusters(grid):
     clusters = dict()
-    mappings = dict() #used for when duplicates of labels. E.G 2 seperate regions of Bs, we will have mapping B: (B1, B2)
     for r in range(grid.shape[0]):
         for c in range(grid.shape[1]):
             val = grid[r,c]
-            cluster(r, c, val, clusters, mappings)
+            cluster(r, c, val, clusters)
     return clusters
-            
 
-def cluster(r, c, val, clusters, mappings):
+def cluster(r, c, val, clusters):
     first_in_list = [[r,c]]
     if str(val) in clusters.keys():
         val_clusters = clusters.get(str(val))
+        neighbor_clusters = []
         for i in range(len(val_clusters)):
             cluster = val_clusters[i]
             if is_neighbor(r,c,cluster):
-                cluster.append([r,c])
-                val_clusters[i]=cluster
-                return
+                neighbor_clusters.append(cluster)
+        if neighbor_clusters:
+            for cluster in neighbor_clusters:
+                val_clusters.remove(cluster)
+            merged_neighbor_clusters = [element for nestedlist in neighbor_clusters for element in nestedlist]
+            merged_neighbor_clusters.append([r,c])
+            val_clusters.append(merged_neighbor_clusters)
+            return
         val_clusters.append(first_in_list)
         return
     clusters[str(val)]= [first_in_list]
