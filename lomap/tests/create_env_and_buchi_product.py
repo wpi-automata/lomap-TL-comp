@@ -4,9 +4,10 @@ def main():
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv', 'b')
+    ts, ts_props = create_ts('maps/alphabetical_maps/office_world.csv', '{}')
 
-    spec = 'F a'
+    # spec = '(F (f & X (F d))) & (G ! g) '
+    spec = '(F h) & (! h U f)'
     buchi = Buchi()
     buchi.from_formula(spec)
     print('Created Buchi automaton of size', buchi.size())
