@@ -69,10 +69,7 @@ def create_numerical_grid(props, symbol_grid):
     return grid
 
 
-def create_transitions(G, edges, nodes):
-
-    spl = dict(nx.all_pairs_shortest_path_length(G))
-    print(f"Shortest path length: {spl}")
+def create_transitions(G, edges, nodes, spl):
 
     labels = dict()
 
@@ -104,7 +101,7 @@ def create_transitions(G, edges, nodes):
     # nx.draw(eg, pos=nx.spring_layout(eg), ax=axes, with_labels=True)
     # plt.show()
 
-def prune_labels(nodes, labels):
+def prune_labels(nodes, labels, spl):
 
     label_keys = list(labels.keys())
 
@@ -129,7 +126,7 @@ def prune_labels(nodes, labels):
 
         new_transition_dict = dict()
 
-        case_1(node, node_outgoing_labels, new_transition_dict)
+        case_1(node, node_outgoing_labels, new_transition_dict, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
         case_3(node_outgoing_labels)
 
@@ -146,16 +143,17 @@ def prune_labels(nodes, labels):
 
 '''
 CASES:
-1) if any outgoing edges share transition, remove it
+1) if any outgoing edges share transition label, only keep label on the closest edge(s)
 2) if there is an outgoing edge containing same label as node remove it 
-3) if some outgoing edges go to node containing shared transition but others don't, remove transition from others
-4) if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
+3) remove empty symbol from transition
+potential others:
+- if some outgoing edges go to node containing shared transition but others don't, remove transition from others
+- if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
 etc
 '''
 
-def case_1(node, node_outgoing_labels, new_transition_dict):
+def case_1(node, node_outgoing_labels, new_transition_dict, spl):
     if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
-
 
         #if item duplicated in list of all edge labels concanated then it occurs on at least more than one edge
         list_of_all_edge_values = [elem for sublist in list(node_outgoing_labels.values()) for elem in sublist]
@@ -166,11 +164,32 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
         if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
             print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
 
-            for edge in node_outgoing_labels.values():
-                for shared in node_outgoing_label_intersections:
-                    if shared in edge:
-                        edge.remove(shared)
-            
+            # loop through all the shared transition labels 
+            for shared in node_outgoing_label_intersections:
+                distance_to_shared = dict()
+                for connected_node in node_outgoing_labels.keys():
+                    # ensure the shared transition label is included in the label to this node
+                    if shared in node_outgoing_labels[connected_node]:
+                        #because the shared nodes are the reduced node value, e.g. '1' instead of '1.0' and '1.1' we need to go through and compare all floored values. take the min of either
+                        connected_nodes_connections_path_length = spl[connected_node]
+                        # need to loop through all connections and do a check due to the reduced node representation
+                        for key in connected_nodes_connections_path_length.keys():
+                            if int(float(key)) == int(shared):
+                                if connected_node in distance_to_shared:
+                                    if connected_nodes_connections_path_length[key] < distance_to_shared[connected_node]:
+                                        distance_to_shared[connected_node] = connected_nodes_connections_path_length[key] #update
+                                else:
+                                    distance_to_shared[connected_node] = connected_nodes_connections_path_length[key] #init
+                # filter the list so that the only nodes remaining are the nodes with the shortest length to the node with the same label as the shared transition
+                nodes_with_shortest_path_to_shared = [key for key in distance_to_shared if distance_to_shared[key] == min(distance_to_shared.values())] 
+                # if the list of nodes with the shortest path length to the node with the same label as the shared transition label natches the list of all nodes with shared transition, then don't remove those nodes since they are equally important
+                if nodes_with_shortest_path_to_shared != list(distance_to_shared.keys()): 
+                    for k in nodes_with_shortest_path_to_shared:
+                        distance_to_shared.pop(k, None)
+                # now distance_to_shared_sorted only contains nodes that have a longer path to the shared node. The shared node label will be removed from the transition from node to each of these connected nodes
+                for k in distance_to_shared.keys():
+                    node_outgoing_labels[k].remove(shared)
+
             '''
             This might be overly complicated:
             description: if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
@@ -193,8 +212,10 @@ def case_1(node, node_outgoing_labels, new_transition_dict):
                     # if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
                     step_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
                     new_transition_dict.update(step_transition_dict)
-                    print(f"new_transition_dict: {new_transition_dict}")    
-            ''' 
+                    print(f"new_transition_dict: {new_transition_dict}")
+            '''
+
+
 
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
@@ -256,9 +277,12 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
 
     intermediate_G = nx.DiGraph()
     intermediate_G.add_edges_from(edges)
+
+    spl = dict(nx.all_pairs_shortest_path_length(intermediate_G))
+    print(f"Shortest path length: {spl}")
     
-    labels = create_transitions(intermediate_G, edges, list(unique_clusters.keys()))
-    labels = prune_labels(list(unique_clusters.keys()), labels)
+    labels = create_transitions(intermediate_G, edges, list(unique_clusters.keys()), spl)
+    labels = prune_labels(list(unique_clusters.keys()), labels, spl)
 
     G = nx.DiGraph()
 
@@ -316,5 +340,5 @@ class TestTSCreation(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
+    # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example4.csv')
