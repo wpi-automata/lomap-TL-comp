@@ -106,7 +106,7 @@ def prune_labels(nodes, edges, labels, spl):
     for node in nodes:
         simplfied_node_rep = str(math.floor(float(node)))
 
-        node_incoming_labels, node_outgoing_labels = get_node_edge_labels(node, labels)
+        node_incoming_labels, node_outgoing_labels = get_node_edge_labels(node, pruned_labels)
 
         case_1(node, node_outgoing_labels, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
@@ -311,6 +311,8 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     return ts, props
 
 class TestTSCreation(unittest.TestCase):
+    #TODO: check labels in unit tests
+
     def test_example_1(self):
         nodes = ['0', '1.1', '1.0', '2', '4']
         out_edges = [('0', '1.0'), ('0', '1.1'), ('1.0', '2'), ('1.0', '0'), ('1.1', '4'), ('1.1', '0'), ('2', '1.0'), ('4', '1.1')]
