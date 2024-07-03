@@ -378,7 +378,41 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
+    def test_example_3(self):
+        nodes = ['0', '1.0']
+        out_edges = [('0', '1.0'), ('1.0', '0')]
+        in_edges = [('1.0', '0'), ('0', '1.0')]
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example3.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 2)
+        self.assertEqual(ts.g.number_of_edges(), 2)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+    
+    def test_example_4(self):
+        nodes = ['4.0', '0', '1.0', '4.1', '2.1', '2.0', '1.1']
+        out_edges = [('4.0', '0'), ('4.0', '1.0'), ('0', '4.1'), ('0', '4.0'), ('1.0', '2.0'), ('1.0', '4.0'), ('4.1', '0'), ('4.1', '2.1'), ('2.1', '1.1'), ('2.1', '4.1'), ('2.0', '1.0'), ('1.1', '2.1')]
+        in_edges = [('1.0', '4.0'), ('0', '4.0'), ('4.0', '0'), ('4.1', '0'), ('4.0', '1.0'), ('2.0', '1.0'), ('2.1', '4.1'), ('0', '4.1'), ('4.1', '2.1'), ('1.1', '2.1'), ('1.0', '2.0'), ('2.1', '1.1')]
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example4.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 7)
+        self.assertEqual(ts.g.number_of_edges(), 12)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+
+    def test_example_5(self):
+        nodes = ['4.0', '8', '2.1', '4.1', '1.0', '4.2', '2.2', '2.0', '1.1']
+        out_edges = [('4.0', '8'), ('4.0', '2.1'), ('8', '4.2'), ('8', '4.1'), ('8', '4.0'), ('2.1', '4.0'), ('4.1', '8'), ('4.1', '1.0'), ('1.0', '2.0'), ('1.0', '4.1'), ('4.2', '8'), ('4.2', '2.2'), ('2.2', '1.1'), ('2.2', '4.2'), ('2.0', '1.0'), ('1.1', '2.2')]
+        in_edges = [('2.1', '4.0'), ('8', '4.0'), ('4.0', '8'), ('4.1', '8'), ('4.2', '8'), ('4.0', '2.1'), ('1.0', '4.1'), ('8', '4.1'), ('4.1', '1.0'), ('2.0', '1.0'), ('2.2', '4.2'), ('8', '4.2'), ('4.2', '2.2'), ('1.1', '2.2'), ('1.0', '2.0'), ('2.2', '1.1')]
+        ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
+        self.assertEqual(ts.g.number_of_nodes(), 9)
+        self.assertEqual(ts.g.number_of_edges(), 16)
+        self.assertTrue(set(ts.g.nodes()) == set(nodes))
+        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
+        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+
+
 if __name__ == '__main__':
-    # unittest.main()
-    ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
+    unittest.main()
+    # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
     # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
