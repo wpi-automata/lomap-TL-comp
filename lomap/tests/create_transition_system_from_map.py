@@ -101,6 +101,8 @@ def prune_labels(nodes, edges, labels, spl):
     
     pruned_labels = copy.deepcopy(labels)
 
+    case_4(nodes, edges, pruned_labels)
+
     for node in nodes:
         simplfied_node_rep = str(math.floor(float(node)))
 
@@ -115,7 +117,7 @@ def prune_labels(nodes, edges, labels, spl):
             new_key = str([node, key])
             pruned_labels[new_key] = node_outgoing_labels.get(key)
 
-    case_4(nodes, edges, pruned_labels)
+    # case_4(nodes, edges, pruned_labels)
 
     return pruned_labels
 
@@ -209,6 +211,7 @@ def case_4(nodes, edges, pruned_labels):
         sorted_equivalent_nodes = sorted(to_remove[reduced_node]) 
         # keep the lowest value node. e.g. from [1.0,1.1,1.2], keep 1.0 remove 1.1 and 1.2
         for node_to_remove in sorted_equivalent_nodes[1:]:
+            nodes.remove(node_to_remove)
             # remove all instances of the deleted nodes from the nodes and the edge labels
             pruned_labels_updated = {k: list(filter(lambda x: node_to_remove not in x, v)) for k, v in pruned_labels.items() if node_to_remove not in k}
             pruned_labels.clear()
@@ -294,19 +297,6 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     alphabetical_edges, label_mapping = convert_edges_and_add_labels_alphabetical(labels, props, edges)
 
     G.add_edges_from(edges)
-
-    '''
-    Create transition system example:
-        ts = Ts(directed=True, multi=False)add_edges_from
-        ts.g = nx.grid_2d_graph(4, 3)
-
-        ts.init[(1, 1)] = 1
-
-        ts.g.add_node((0, 0), attr_dict={'prop': set(['a'])})
-        ts.g.add_node((3, 2), attr_dict={'prop': set(['b'])})
-
-        ts.g.add_edges_from(ts.g.edges(), weight=1)
-    '''
 
     inv_props = {v: k for k, v in props.items()}
 
