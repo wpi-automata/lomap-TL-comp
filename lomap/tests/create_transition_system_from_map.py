@@ -91,16 +91,6 @@ def create_transitions(G, edges, nodes, spl):
     print(f"labels: {labels}")
     return labels
 
-    #Other potentially important functions:
-    # sp = dict(nx.all_pairs_shortest_path(G))
-    # print(f"Shortest path: {sp}")
-    # nx.all_simple_paths(G, source=0, target=3)
-    # eg = nx.ego_graph(G, '4', radius=10, center=True, undirected=False, distance=None)
-    # print(f"Ego graph: {eg}")
-    # fig, axes = plt.subplots(1,1,dpi=72)
-    # nx.draw(eg, pos=nx.spring_layout(eg), ax=axes, with_labels=True)
-    # plt.show()
-
 def prune_labels(nodes, edges, labels, spl):
 
     #for these purposes, need to remove every sub label e.g. 1.1 1.2 and replace it with 1, since same symbol in map
@@ -179,31 +169,6 @@ def case_1(node, node_outgoing_labels, spl):
                 # if len(distance_to_shared.keys()) > 1:
                 for k in distance_to_shared.keys():
                     node_outgoing_labels[k].remove(shared)
-
-            '''
-            This might be overly complicated:
-            description: if all outgoing edges same share transition and all go to node containing shared transition - remove transition from all (maybe need check to make sure not empty transition?)
-
-            for node_outgoing_label_intersection in node_outgoing_label_intersections:
-
-                print(f"node_outgoing_label_intersection: {node_outgoing_label_intersection}")
-
-                #transitions that go to node that shares same value as intersection between transitions
-                transitions_that_go_to_intersection_node = {k:v for (k,v) in node_outgoing_labels.items() if str(math.floor(float(k))) == node_outgoing_label_intersection}
-                print(f"transitions_that_go_to_intersection_node dict: {transitions_that_go_to_intersection_node}")
-
-                #transitions that share same value as intersection
-                transitions_that_share_same_value = {k:v for (k,v) in node_outgoing_labels.items() for item in v if item == node_outgoing_label_intersection}
-                # transitions_that_share_same_value = {k:[item for item in v if item==str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
-
-                print(f"transitions_that_share_same_value dict: {transitions_that_share_same_value}")
-
-                if transitions_that_go_to_intersection_node==transitions_that_share_same_value:
-                    # if all(len(l) > 1 for l in list(transitions_that_go_to_intersection_node.values())): #all transition labels longer than 1 symbol
-                    step_transition_dict = {k:[item for item in v if item!=str(node_outgoing_label_intersection)] for (k,v) in node_outgoing_labels.items()}
-                    new_transition_dict.update(step_transition_dict)
-                    print(f"new_transition_dict: {new_transition_dict}")
-            '''
 
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
