@@ -101,43 +101,31 @@ def create_transitions(G, edges, nodes, spl):
     # nx.draw(eg, pos=nx.spring_layout(eg), ax=axes, with_labels=True)
     # plt.show()
 
-def prune_labels(nodes, labels, spl):
-
-    label_keys = list(labels.keys())
+def prune_labels(nodes, edges, labels, spl):
 
     #for these purposes, need to remove every sub label e.g. 1.1 1.2 and replace it with 1, since same symbol in map
     for node in nodes:
-        for label_key in label_keys:
+        for label_key in labels.keys():
             pruned_label = list(set(map(lambda x: str(math.floor(float(x))),labels.get(label_key)))) #set to remove duplicates
             labels[label_key] = pruned_label
     
     pruned_labels = copy.deepcopy(labels)
 
     for node in nodes:
-        node_outgoing_labels = dict()
         simplfied_node_rep = str(math.floor(float(node)))
 
-        #TODO: comment what this does
-        for label_key in label_keys:
+        node_incoming_labels, node_outgoing_labels = get_node_edge_labels(node, labels)
 
-            label_key_list = label_key.strip('][\'\"').split('\', \'')
-            if label_key_list[0] == node:
-                node_outgoing_labels[label_key_list[1]] = labels.get(label_key)
-
-        new_transition_dict = dict()
-
-        case_1(node, node_outgoing_labels, new_transition_dict, spl)
+        case_1(node, node_outgoing_labels, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
         case_3(node_outgoing_labels)
 
-        if not new_transition_dict:
-            step_transition_dict = {k:[item for item in v] for (k,v) in node_outgoing_labels.items()}
-            new_transition_dict.update(step_transition_dict)
+        # prune "finalized" labels according to updated outgoing labels for each node
+        for key in node_outgoing_labels.keys():
+            new_key = str([node, key])
+            pruned_labels[new_key] = node_outgoing_labels.get(key)
 
-        if new_transition_dict:
-            for key in new_transition_dict.keys():
-                new_key = str([node, key])
-                pruned_labels[new_key] = new_transition_dict.get(key)
+    case_4(nodes, edges, pruned_labels)
 
     return pruned_labels
 
@@ -146,13 +134,14 @@ CASES:
 1) if any outgoing edges share transition label, only keep label on the closest edge(s)
 2) if there is an outgoing edge containing same label as node remove it 
 3) remove empty symbol from transition
+4) if nodes and transitions are the same, combine them
 potential others:
 - if some outgoing edges go to node containing shared transition but others don't, remove transition from others
 - if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
 etc
 '''
 
-def case_1(node, node_outgoing_labels, new_transition_dict, spl):
+def case_1(node, node_outgoing_labels, spl):
     if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
 
         #if item duplicated in list of all edge labels concanated then it occurs on at least more than one edge
@@ -183,10 +172,11 @@ def case_1(node, node_outgoing_labels, new_transition_dict, spl):
                 # filter the list so that the only nodes remaining are the nodes with the shortest length to the node with the same label as the shared transition
                 nodes_with_shortest_path_to_shared = [key for key in distance_to_shared if distance_to_shared[key] == min(distance_to_shared.values())] 
                 # if the list of nodes with the shortest path length to the node with the same label as the shared transition label natches the list of all nodes with shared transition, then don't remove those nodes since they are equally important
-                if nodes_with_shortest_path_to_shared != list(distance_to_shared.keys()): 
+                if len(nodes_with_shortest_path_to_shared) <=1 and nodes_with_shortest_path_to_shared != list(distance_to_shared.keys()): 
                     for k in nodes_with_shortest_path_to_shared:
                         distance_to_shared.pop(k, None)
                 # now distance_to_shared_sorted only contains nodes that have a longer path to the shared node. The shared node label will be removed from the transition from node to each of these connected nodes
+                # if len(distance_to_shared.keys()) > 1:
                 for k in distance_to_shared.keys():
                     node_outgoing_labels[k].remove(shared)
 
@@ -215,8 +205,6 @@ def case_1(node, node_outgoing_labels, new_transition_dict, spl):
                     print(f"new_transition_dict: {new_transition_dict}")
             '''
 
-
-
 def case_2(simplfied_node_rep, node_outgoing_labels):
     for key in node_outgoing_labels.keys():
             if simplfied_node_rep in node_outgoing_labels.get(key):
@@ -228,6 +216,58 @@ def case_3(node_outgoing_labels):
         for s in empty_symbols:
             node_outgoing_labels.get(key).remove(s)
 
+def case_4(nodes, edges, pruned_labels):
+    #ASSUMPTION: 2 nodes are the same if the input and output labels are the same
+
+    to_remove = dict()
+    replacements = list()
+
+    for i in range(len(nodes)):
+        node = nodes[i]
+        if node not in to_remove:
+            node_incoming_labels, node_outgoing_labels = get_node_edge_labels(node, pruned_labels)
+            for other_node in nodes[i+1:]:
+                if other_node not in to_remove:
+                    if int(float(node)) == int(float(other_node)): # reduced node labels are the same
+                        other_node_incoming_labels, other_node_outgoing_labels = get_node_edge_labels(other_node, pruned_labels)
+                        if node_incoming_labels==other_node_incoming_labels and node_outgoing_labels==other_node_outgoing_labels:
+                            key = int(float(node))
+                            if key in to_remove:
+                                to_remove_nodes = to_remove[int(float(node))]
+                            else:
+                                to_remove_nodes = set()
+                            to_remove_nodes.add(node)
+                            to_remove_nodes.add(other_node) 
+                            to_remove[int(float(node))] = to_remove_nodes
+    
+    for reduced_node in to_remove.keys():
+        sorted_equivalent_nodes = sorted(to_remove[reduced_node]) 
+        # keep the lowest value node. e.g. from [1.0,1.1,1.2], keep 1.0 remove 1.1 and 1.2
+        for node_to_remove in sorted_equivalent_nodes[1:]:
+            # remove all instances of the deleted nodes from the nodes and the edge labels
+            pruned_labels_updated = {k: list(filter(lambda x: node_to_remove not in x, v)) for k, v in pruned_labels.items() if node_to_remove not in k}
+            pruned_labels.clear()
+            pruned_labels.update(pruned_labels_updated) #to keep same object for cleanliness
+            # edges_updated = list(list(filter(lambda x: node_to_remove not in x, e)) for e in edges)
+            edges_updated = [e for e in edges if node_to_remove not in e]
+            edges.clear()
+            edges.extend(edges_updated)
+
+    
+def get_node_edge_labels(node, labels):
+    node_incoming_labels = dict()
+    node_outgoing_labels = dict()
+
+    for label_key in labels.keys():
+
+            label_key_list = label_key.strip('][\'\"').split('\', \'')
+            if label_key_list[0] == node:
+                node_outgoing_labels[label_key_list[1]] = labels.get(label_key)
+            if label_key_list[1] == node:
+                node_incoming_labels[label_key_list[0]] = labels.get(label_key)
+
+    return node_incoming_labels, node_outgoing_labels
+      
 def convert_edges_and_add_labels_alphabetical(labels, props, edges):
 
     num_to_alpha_prop = {v: k for k, v in props.items()}
@@ -282,11 +322,11 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     print(f"Shortest path length: {spl}")
     
     labels = create_transitions(intermediate_G, edges, list(unique_clusters.keys()), spl)
-    labels = prune_labels(list(unique_clusters.keys()), labels, spl)
+    labels = prune_labels(list(unique_clusters.keys()), edges, labels, spl)
 
     G = nx.DiGraph()
 
-    alphabetical_edges, label_mapping= convert_edges_and_add_labels_alphabetical(labels, props, edges)
+    alphabetical_edges, label_mapping = convert_edges_and_add_labels_alphabetical(labels, props, edges)
 
     G.add_edges_from(edges)
 
@@ -339,6 +379,6 @@ class TestTSCreation(unittest.TestCase):
         self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
 
 if __name__ == '__main__':
-    unittest.main()
-    # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example4.csv')
+    # unittest.main()
+    ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
