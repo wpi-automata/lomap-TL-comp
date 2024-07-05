@@ -311,62 +311,71 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     return ts, props
 
 class TestTSCreation(unittest.TestCase):
-    #TODO: check labels in unit tests
 
     def test_example_1(self):
         nodes = ['0', '1.1', '1.0', '2', '4']
         out_edges = [('0', '1.0'), ('0', '1.1'), ('1.0', '2'), ('1.0', '0'), ('1.1', '4'), ('1.1', '0'), ('2', '1.0'), ('4', '1.1')]
         in_edges = [('1.1', '0'), ('1.0', '0'), ('0', '1.0'), ('2', '1.0'), ('0', '1.1'), ('4', '1.1'), ('1.0', '2'), ('1.1', '4')]
+        adj = {'0': {'1.0': {'pi': ['b'], 'weight': 0}, '1.1': {'pi': ['c'], 'weight': 0}}, '1.0': {'2': {'pi': ['b'], 'weight': 0}, '0': {'pi': ['c'], 'weight': 0}}, '1.1': {'4': {'pi': ['c'], 'weight': 0}, '0': {'pi': ['b'], 'weight': 0}}, '2': {'1.0': {'pi': ['c', 'a'], 'weight': 0}}, '4': {'1.1': {'pi': ['b', 'a'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
         self.assertEqual(ts.g.number_of_nodes(), 5)
         self.assertEqual(ts.g.number_of_edges(), 8)
-        self.assertTrue(set(ts.g.nodes()) == set(nodes))
-        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
-        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+        self.assertEqual(set(ts.g.nodes()), set(nodes))
+        self.assertEqual(set(ts.g.out_edges()), set(out_edges))
+        self.assertEqual(set(ts.g.in_edges()), set(in_edges))
+        self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
     def test_example_2(self):
         nodes = ['0.0', '1', '4', '2', '0.1']
         out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.1'), ('1', '0.0'), ('4', '0.0'), ('2', '0.1'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
         in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2'), ('2', '0.1'), ('1', '0.1')]
+        adj = {'0.0': {'1': {'pi': ['a'], 'weight': 0}, '4': {'pi': ['c'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}, '1': {'0.1': {'pi': [], 'weight': 0}, '0.0': {'pi': ['c'], 'weight': 0}}, '4': {'0.0': {'pi': ['a', 'b'], 'weight': 0}}, '2': {'0.1': {'pi': [], 'weight': 0}, '0.0': {'pi': ['c'], 'weight': 0}}, '0.1': {'1': {'pi': ['a'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
         self.assertEqual(ts.g.number_of_nodes(), 5)
         self.assertEqual(ts.g.number_of_edges(), 10)
-        self.assertTrue(set(ts.g.nodes()) == set(nodes))
-        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
-        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+        self.assertEqual(set(ts.g.nodes()), set(nodes))
+        self.assertEqual(set(ts.g.out_edges()), set(out_edges))
+        self.assertEqual(set(ts.g.in_edges()), set(in_edges))
+        self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
     def test_example_3(self):
         nodes = ['0', '1.0']
         out_edges = [('0', '1.0'), ('1.0', '0')]
         in_edges = [('1.0', '0'), ('0', '1.0')]
+        adj = {'0': {'1.0': {'pi': ['a'], 'weight': 0}}, '1.0': {'0': {'pi': [], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example3.csv')
         self.assertEqual(ts.g.number_of_nodes(), 2)
         self.assertEqual(ts.g.number_of_edges(), 2)
-        self.assertTrue(set(ts.g.nodes()) == set(nodes))
-        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
-        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
-    
+        self.assertEqual(set(ts.g.nodes()), set(nodes))
+        self.assertEqual(set(ts.g.out_edges()), set(out_edges))
+        self.assertEqual(set(ts.g.in_edges()), set(in_edges))
+        self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
+
     def test_example_4(self):
         nodes = ['4.0', '0', '1.0', '4.1', '2.1', '2.0', '1.1']
         out_edges = [('4.0', '0'), ('4.0', '1.0'), ('0', '4.1'), ('0', '4.0'), ('1.0', '2.0'), ('1.0', '4.0'), ('4.1', '0'), ('4.1', '2.1'), ('2.1', '1.1'), ('2.1', '4.1'), ('2.0', '1.0'), ('1.1', '2.1')]
         in_edges = [('1.0', '4.0'), ('0', '4.0'), ('4.0', '0'), ('4.1', '0'), ('4.0', '1.0'), ('2.0', '1.0'), ('2.1', '4.1'), ('0', '4.1'), ('4.1', '2.1'), ('1.1', '2.1'), ('1.0', '2.0'), ('2.1', '1.1')]
+        adj = {'4.0': {'0': {'pi': [], 'weight': 0}, '1.0': {'pi': ['a', 'b'], 'weight': 0}}, '0': {'4.1': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['a'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['c'], 'weight': 0}}, '4.1': {'0': {'pi': [], 'weight': 0}, '2.1': {'pi': ['a', 'b'], 'weight': 0}}, '2.1': {'1.1': {'pi': ['a'], 'weight': 0}, '4.1': {'pi': ['c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['a', 'c'], 'weight': 0}}, '1.1': {'2.1': {'pi': ['c', 'b'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example4.csv')
         self.assertEqual(ts.g.number_of_nodes(), 7)
         self.assertEqual(ts.g.number_of_edges(), 12)
-        self.assertTrue(set(ts.g.nodes()) == set(nodes))
-        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
-        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+        self.assertEqual(set(ts.g.nodes()), set(nodes))
+        self.assertEqual(set(ts.g.out_edges()), set(out_edges))
+        self.assertEqual(set(ts.g.in_edges()), set(in_edges))
+        self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
     def test_example_5(self):
         nodes = ['4.0', '8', '2.1', '4.1', '1.0', '4.2', '2.2', '2.0', '1.1']
         out_edges = [('4.0', '8'), ('4.0', '2.1'), ('8', '4.2'), ('8', '4.1'), ('8', '4.0'), ('2.1', '4.0'), ('4.1', '8'), ('4.1', '1.0'), ('1.0', '2.0'), ('1.0', '4.1'), ('4.2', '8'), ('4.2', '2.2'), ('2.2', '1.1'), ('2.2', '4.2'), ('2.0', '1.0'), ('1.1', '2.2')]
         in_edges = [('2.1', '4.0'), ('8', '4.0'), ('4.0', '8'), ('4.1', '8'), ('4.2', '8'), ('4.0', '2.1'), ('1.0', '4.1'), ('8', '4.1'), ('4.1', '1.0'), ('2.0', '1.0'), ('2.2', '4.2'), ('8', '4.2'), ('4.2', '2.2'), ('1.1', '2.2'), ('1.0', '2.0'), ('2.2', '1.1')]
+        adj = {'4.0': {'8': {'pi': ['d', 'a'], 'weight': 0}, '2.1': {'pi': ['b'], 'weight': 0}}, '8': {'4.2': {'pi': [], 'weight': 0}, '4.1': {'pi': ['a'], 'weight': 0}, '4.0': {'pi': [], 'weight': 0}}, '2.1': {'4.0': {'pi': ['d', 'a', 'c'], 'weight': 0}}, '4.1': {'8': {'pi': ['d'], 'weight': 0}, '1.0': {'pi': ['a', 'b'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.1': {'pi': ['d', 'c'], 'weight': 0}}, '4.2': {'8': {'pi': ['d'], 'weight': 0}, '2.2': {'pi': ['a', 'b'], 'weight': 0}}, '2.2': {'1.1': {'pi': ['a'], 'weight': 0}, '4.2': {'pi': ['d', 'c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['d', 'a', 'c'], 'weight': 0}}, '1.1': {'2.2': {'pi': ['d', 'c', 'b'], 'weight': 0}}} 
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
         self.assertEqual(ts.g.number_of_nodes(), 9)
         self.assertEqual(ts.g.number_of_edges(), 16)
-        self.assertTrue(set(ts.g.nodes()) == set(nodes))
-        self.assertTrue(set(ts.g.out_edges()) == set(out_edges))
-        self.assertTrue(set(ts.g.in_edges()) == set(in_edges))
+        self.assertEqual(set(ts.g.nodes()), set(nodes))
+        self.assertEqual(set(ts.g.out_edges()), set(out_edges))
+        self.assertEqual(set(ts.g.in_edges()), set(in_edges))
+        self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
 
 if __name__ == '__main__':

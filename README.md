@@ -48,6 +48,7 @@ Linux (Ubuntu)
     pip install pyyaml
     pip install pp # Optional
     apt install cmake
+    pip install scipy
     ```
 
   * Note: Ensure that Python 2.7 is installed.
