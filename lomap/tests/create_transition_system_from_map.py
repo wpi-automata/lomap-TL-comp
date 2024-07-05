@@ -111,13 +111,14 @@ def prune_labels(nodes, edges, labels, spl):
         case_1(node, node_outgoing_labels, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
         case_3(node_outgoing_labels)
+        case_5(node_outgoing_labels)
 
         # prune "finalized" labels according to updated outgoing labels for each node
         for key in node_outgoing_labels.keys():
             new_key = str([node, key])
             pruned_labels[new_key] = node_outgoing_labels.get(key)
 
-    # case_4(nodes, edges, pruned_labels)
+    case_5(pruned_labels)
 
     return pruned_labels
 
@@ -127,6 +128,7 @@ CASES:
 2) if there is an outgoing edge containing same label as node remove it 
 3) remove empty symbol from transition
 4) if nodes and transitions are the same, combine them
+5) remove all empty transitions
 potential others:
 - if some outgoing edges go to node containing shared transition but others don't, remove transition from others
 - if 2 of the same node symbols (e.g. 1.0 and 1.1) are connected, there should be no transitions between them that contain the symbol on the transition
@@ -221,7 +223,11 @@ def case_4(nodes, edges, pruned_labels):
             edges.clear()
             edges.extend(edges_updated)
 
-    
+def case_5(node_outgoing_labels):
+    node_outgoing_labels_updated = {k: v for k, v in node_outgoing_labels.items() if v != []}
+    node_outgoing_labels.clear()
+    node_outgoing_labels.update(node_outgoing_labels_updated) #to keep same object for cleanliness
+
 def get_node_edge_labels(node, labels):
     node_incoming_labels = dict()
     node_outgoing_labels = dict()
@@ -240,16 +246,22 @@ def convert_edges_and_add_labels_alphabetical(labels, props, edges):
 
     num_to_alpha_prop = {v: k for k, v in props.items()}
     label_mapping = dict()
+    edges_to_remove = list()
 
     for edge in edges:
         pi = labels.get(str(edge))
-        for i in range(len(pi)):
-            pi[i] = num_to_alpha_prop.get(int(pi[i]))
+        if pi:
+            for i in range(len(pi)):
+                pi[i] = num_to_alpha_prop.get(int(pi[i]))
 
-        label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
-        label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
+            label_mapping[edge[0]] = num_to_alpha_prop.get(int(float(edge[0])))
+            label_mapping[edge[1]] = num_to_alpha_prop.get(int(float(edge[1])))
 
-        edge.append({'pi':pi, 'weight': 0})
+            edge.append({'pi':pi, 'weight': 0})
+        else:
+            edges_to_remove.append(edge)
+    
+    edges = [e for e in edges if e not in edges_to_remove]
 
     return edges, label_mapping
 
@@ -296,7 +308,7 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
 
     alphabetical_edges, label_mapping = convert_edges_and_add_labels_alphabetical(labels, props, edges)
 
-    G.add_edges_from(edges)
+    G.add_edges_from(alphabetical_edges)
 
     inv_props = {v: k for k, v in props.items()}
 
@@ -327,12 +339,12 @@ class TestTSCreation(unittest.TestCase):
 
     def test_example_2(self):
         nodes = ['0.0', '1', '4', '2', '0.1']
-        out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.1'), ('1', '0.0'), ('4', '0.0'), ('2', '0.1'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
-        in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2'), ('2', '0.1'), ('1', '0.1')]
-        adj = {'0.0': {'1': {'pi': ['a'], 'weight': 0}, '4': {'pi': ['c'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}, '1': {'0.1': {'pi': [], 'weight': 0}, '0.0': {'pi': ['c'], 'weight': 0}}, '4': {'0.0': {'pi': ['a', 'b'], 'weight': 0}}, '2': {'0.1': {'pi': [], 'weight': 0}, '0.0': {'pi': ['c'], 'weight': 0}}, '0.1': {'1': {'pi': ['a'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}}
+        out_edges = [('0.0', '1'), ('0.0', '4'), ('0.0', '2'), ('1', '0.0'), ('4', '0.0'), ('2', '0.0'), ('0.1', '1'), ('0.1', '2')]
+        in_edges = [('2', '0.0'), ('4', '0.0'), ('1', '0.0'), ('0.0', '1'), ('0.1', '1'), ('0.0', '4'), ('0.0', '2'), ('0.1', '2')]
+        adj = {'0.0': {'1': {'pi': ['a'], 'weight': 0}, '4': {'pi': ['c'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}, '1': {'0.0': {'pi': ['c'], 'weight': 0}}, '4': {'0.0': {'pi': ['a', 'b'], 'weight': 0}}, '2': {'0.0': {'pi': ['c'], 'weight': 0}}, '0.1': {'1': {'pi': ['a'], 'weight': 0}, '2': {'pi': ['b'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example2.csv')
         self.assertEqual(ts.g.number_of_nodes(), 5)
-        self.assertEqual(ts.g.number_of_edges(), 10)
+        self.assertEqual(ts.g.number_of_edges(), 8)
         self.assertEqual(set(ts.g.nodes()), set(nodes))
         self.assertEqual(set(ts.g.out_edges()), set(out_edges))
         self.assertEqual(set(ts.g.in_edges()), set(in_edges))
@@ -340,12 +352,12 @@ class TestTSCreation(unittest.TestCase):
 
     def test_example_3(self):
         nodes = ['0', '1.0']
-        out_edges = [('0', '1.0'), ('1.0', '0')]
-        in_edges = [('1.0', '0'), ('0', '1.0')]
-        adj = {'0': {'1.0': {'pi': ['a'], 'weight': 0}}, '1.0': {'0': {'pi': [], 'weight': 0}}}
+        out_edges = [('0', '1.0')]
+        in_edges = [('0', '1.0')]
+        adj = {'0': {'1.0': {'pi': ['a'], 'weight': 0}}, '1.0': {}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example3.csv')
         self.assertEqual(ts.g.number_of_nodes(), 2)
-        self.assertEqual(ts.g.number_of_edges(), 2)
+        self.assertEqual(ts.g.number_of_edges(), 1)
         self.assertEqual(set(ts.g.nodes()), set(nodes))
         self.assertEqual(set(ts.g.out_edges()), set(out_edges))
         self.assertEqual(set(ts.g.in_edges()), set(in_edges))
@@ -353,12 +365,12 @@ class TestTSCreation(unittest.TestCase):
 
     def test_example_4(self):
         nodes = ['4.0', '0', '1.0', '4.1', '2.1', '2.0', '1.1']
-        out_edges = [('4.0', '0'), ('4.0', '1.0'), ('0', '4.1'), ('0', '4.0'), ('1.0', '2.0'), ('1.0', '4.0'), ('4.1', '0'), ('4.1', '2.1'), ('2.1', '1.1'), ('2.1', '4.1'), ('2.0', '1.0'), ('1.1', '2.1')]
-        in_edges = [('1.0', '4.0'), ('0', '4.0'), ('4.0', '0'), ('4.1', '0'), ('4.0', '1.0'), ('2.0', '1.0'), ('2.1', '4.1'), ('0', '4.1'), ('4.1', '2.1'), ('1.1', '2.1'), ('1.0', '2.0'), ('2.1', '1.1')]
-        adj = {'4.0': {'0': {'pi': [], 'weight': 0}, '1.0': {'pi': ['a', 'b'], 'weight': 0}}, '0': {'4.1': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['a'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['c'], 'weight': 0}}, '4.1': {'0': {'pi': [], 'weight': 0}, '2.1': {'pi': ['a', 'b'], 'weight': 0}}, '2.1': {'1.1': {'pi': ['a'], 'weight': 0}, '4.1': {'pi': ['c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['a', 'c'], 'weight': 0}}, '1.1': {'2.1': {'pi': ['c', 'b'], 'weight': 0}}}
+        out_edges = [('4.0', '1.0'), ('1.0', '2.0'), ('1.0', '4.0'), ('4.1', '2.1'), ('2.1', '1.1'), ('2.1', '4.1'), ('2.0', '1.0'), ('1.1', '2.1'), ('0', '4.1'), ('0', '4.0')]
+        in_edges = [('1.0', '4.0'), ('0', '4.0'), ('4.0', '1.0'), ('2.0', '1.0'), ('2.1', '4.1'), ('0', '4.1'), ('4.1', '2.1'), ('1.1', '2.1'), ('1.0', '2.0'), ('2.1', '1.1')]
+        adj = {'4.0': {'1.0': {'pi': ['b', 'a'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['c'], 'weight': 0}}, '4.1': {'2.1': {'pi': ['b', 'a'], 'weight': 0}}, '2.1': {'1.1': {'pi': ['a'], 'weight': 0}, '4.1': {'pi': ['c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['c', 'a'], 'weight': 0}}, '1.1': {'2.1': {'pi': ['c', 'b'], 'weight': 0}}, '0': {'4.1': {'pi': ['b'], 'weight': 0}, '4.0': {'pi': ['a'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example4.csv')
         self.assertEqual(ts.g.number_of_nodes(), 7)
-        self.assertEqual(ts.g.number_of_edges(), 12)
+        self.assertEqual(ts.g.number_of_edges(), 10)
         self.assertEqual(set(ts.g.nodes()), set(nodes))
         self.assertEqual(set(ts.g.out_edges()), set(out_edges))
         self.assertEqual(set(ts.g.in_edges()), set(in_edges))
@@ -366,17 +378,16 @@ class TestTSCreation(unittest.TestCase):
 
     def test_example_5(self):
         nodes = ['4.0', '8', '2.1', '4.1', '1.0', '4.2', '2.2', '2.0', '1.1']
-        out_edges = [('4.0', '8'), ('4.0', '2.1'), ('8', '4.2'), ('8', '4.1'), ('8', '4.0'), ('2.1', '4.0'), ('4.1', '8'), ('4.1', '1.0'), ('1.0', '2.0'), ('1.0', '4.1'), ('4.2', '8'), ('4.2', '2.2'), ('2.2', '1.1'), ('2.2', '4.2'), ('2.0', '1.0'), ('1.1', '2.2')]
-        in_edges = [('2.1', '4.0'), ('8', '4.0'), ('4.0', '8'), ('4.1', '8'), ('4.2', '8'), ('4.0', '2.1'), ('1.0', '4.1'), ('8', '4.1'), ('4.1', '1.0'), ('2.0', '1.0'), ('2.2', '4.2'), ('8', '4.2'), ('4.2', '2.2'), ('1.1', '2.2'), ('1.0', '2.0'), ('2.2', '1.1')]
-        adj = {'4.0': {'8': {'pi': ['d', 'a'], 'weight': 0}, '2.1': {'pi': ['b'], 'weight': 0}}, '8': {'4.2': {'pi': [], 'weight': 0}, '4.1': {'pi': ['a'], 'weight': 0}, '4.0': {'pi': [], 'weight': 0}}, '2.1': {'4.0': {'pi': ['d', 'a', 'c'], 'weight': 0}}, '4.1': {'8': {'pi': ['d'], 'weight': 0}, '1.0': {'pi': ['a', 'b'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.1': {'pi': ['d', 'c'], 'weight': 0}}, '4.2': {'8': {'pi': ['d'], 'weight': 0}, '2.2': {'pi': ['a', 'b'], 'weight': 0}}, '2.2': {'1.1': {'pi': ['a'], 'weight': 0}, '4.2': {'pi': ['d', 'c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['d', 'a', 'c'], 'weight': 0}}, '1.1': {'2.2': {'pi': ['d', 'c', 'b'], 'weight': 0}}} 
+        out_edges = [('4.0', '8'), ('4.0', '2.1'), ('8', '4.1'), ('2.1', '4.0'), ('4.1', '8'), ('4.1', '1.0'), ('1.0', '2.0'), ('1.0', '4.1'), ('4.2', '8'), ('4.2', '2.2'), ('2.2', '1.1'), ('2.2', '4.2'), ('2.0', '1.0'), ('1.1', '2.2')]
+        in_edges = [('2.1', '4.0'), ('4.0', '8'), ('4.1', '8'), ('4.2', '8'), ('4.0', '2.1'), ('1.0', '4.1'), ('8', '4.1'), ('4.1', '1.0'), ('2.0', '1.0'), ('2.2', '4.2'), ('4.2', '2.2'), ('1.1', '2.2'), ('1.0', '2.0'), ('2.2', '1.1')]
+        adj = {'4.0': {'8': {'pi': ['d', 'a'], 'weight': 0}, '2.1': {'pi': ['b'], 'weight': 0}}, '8': {'4.1': {'pi': ['a'], 'weight': 0}}, '2.1': {'4.0': {'pi': ['d', 'c', 'a'], 'weight': 0}}, '4.1': {'8': {'pi': ['d'], 'weight': 0}, '1.0': {'pi': ['b', 'a'], 'weight': 0}}, '1.0': {'2.0': {'pi': ['b'], 'weight': 0}, '4.1': {'pi': ['d', 'c'], 'weight': 0}}, '4.2': {'8': {'pi': ['d'], 'weight': 0}, '2.2': {'pi': ['b', 'a'], 'weight': 0}}, '2.2': {'1.1': {'pi': ['a'], 'weight': 0}, '4.2': {'pi': ['d', 'c'], 'weight': 0}}, '2.0': {'1.0': {'pi': ['d', 'c', 'a'], 'weight': 0}}, '1.1': {'2.2': {'pi': ['d', 'c', 'b'], 'weight': 0}}}
         ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
         self.assertEqual(ts.g.number_of_nodes(), 9)
-        self.assertEqual(ts.g.number_of_edges(), 16)
+        self.assertEqual(ts.g.number_of_edges(), 14)
         self.assertEqual(set(ts.g.nodes()), set(nodes))
         self.assertEqual(set(ts.g.out_edges()), set(out_edges))
         self.assertEqual(set(ts.g.in_edges()), set(in_edges))
         self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
-
 
 if __name__ == '__main__':
     unittest.main()
