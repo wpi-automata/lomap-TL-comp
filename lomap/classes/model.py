@@ -124,3 +124,12 @@ class Model(object):
         '''Save the model to file in YAML format.'''
         with open(filename, 'w') as fout:
             dump(self, fout, Dumper=Dumper)
+
+    def word_from_trajectory(self, trajectory):
+        word = []
+        for state, next_state in zip(trajectory, trajectory[1:]):
+            idk = self.g[state][next_state]
+            symbol = next(iter(self.g[state][next_state]['pi']))
+            # symbol = set([prop for prop, enc in self.props.items() if enc & symbol])
+            word.append(symbol)
+        return word

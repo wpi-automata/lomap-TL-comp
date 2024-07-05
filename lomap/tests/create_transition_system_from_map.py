@@ -7,7 +7,6 @@ import unittest
 import string
 from collections import Counter
 from test_map_word_accepted_randomized_occupancy_grid import *
-from lomap.algorithms.product import ts_times_buchi
 from lomap.classes import Buchi, Ts
 
 EMPTY_SYMBOL='0'

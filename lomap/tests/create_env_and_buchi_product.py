@@ -1,4 +1,6 @@
 from create_transition_system_from_map import *
+from lomap.algorithms.product import ts_times_buchi
+import networkx as nx
 
 def main():
 
@@ -28,6 +30,19 @@ def main():
     draw_graph(pa.g, labels=labels)
     plt.show()
 
+    print('Product initial states:', pa.init) # initial states
+    print('Product accepting states:', pa.final) # final states 
+    '''
+    Because we are taking the product between an LTL spec buchi and a TS, we have only one input state, but many possible final states.
+    To find the shortest possible trajectory, we must compare all possible input state to final state pairs and the path length they produce.
+    '''
+    shortest_trajectory = None
+    for f in iter(pa.final):
+        trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
+        if not shortest_trajectory or len(trajectory) < len(shortest_trajectory):
+            shortest_trajectory = trajectory
+    
+    print('Accepted word:', pa.word_from_trajectory(shortest_trajectory))
 
 if __name__ == '__main__':
     
