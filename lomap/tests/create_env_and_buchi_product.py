@@ -6,7 +6,7 @@ def main():
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts('maps/alphabetical_maps/office_world.csv', '{}')
+    ts, ts_props = create_ts('maps/alphabetical_maps/office_world.csv', 'f')
 
     # spec = '(F (f & X (F d))) & (G ! g) '
     spec = '(F h) & (! h U f)'
@@ -26,9 +26,6 @@ def main():
     for edge in pa.g.edges():
         if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
             pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
-        
-    draw_graph(pa.g, labels=labels)
-    plt.show()
 
     print('Product initial states:', pa.init) # initial states
     print('Product accepting states:', pa.final) # final states 
@@ -41,9 +38,14 @@ def main():
         trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
         if not shortest_trajectory or len(trajectory) < len(shortest_trajectory):
             shortest_trajectory = trajectory
-    
+
+    print('Shortest Trajectory: ', shortest_trajectory)
+
     print('Accepted word:', pa.word_from_trajectory(shortest_trajectory))
 
+    draw_graph(pa.g, labels=labels)
+    plt.show()
+    
 if __name__ == '__main__':
     
     main()

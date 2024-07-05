@@ -389,6 +389,6 @@ class TestTSCreation(unittest.TestCase):
         self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example5.csv')
+    ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')

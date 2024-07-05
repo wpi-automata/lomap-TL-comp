@@ -126,10 +126,23 @@ class Model(object):
             dump(self, fout, Dumper=Dumper)
 
     def word_from_trajectory(self, trajectory):
+        possible_words = []
         word = []
+
         for state, next_state in zip(trajectory, trajectory[1:]):
-            idk = self.g[state][next_state]
-            symbol = next(iter(self.g[state][next_state]['pi']))
-            # symbol = set([prop for prop, enc in self.props.items() if enc & symbol])
-            word.append(symbol)
+            symbols = self.g[state][next_state]['pi']
+            possible_words.append(symbols) # list of lists of possible policies to take on each transition edge
+
+        #simplify the trajectory by seeing if there is an intersection (same policy) on subsequent edges
+        for possible_word, next_possible_word in zip(possible_words, possible_words[1:]):
+            intersection = list(set(possible_word) & set(next_possible_word))
+            if intersection:
+                word.append(intersection[0])
+            else:
+                word.append(possible_word[0])
+        
+        #need to add final symbol
+        word.append(possible_words[-1][0])
+        #remove duplicates
+        word = list(dict.fromkeys(word))
         return word
