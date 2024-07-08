@@ -1,4 +1,4 @@
-from a_star import *
+from lomap.tests.a_star import *
 import numpy as np
 import math
 import unittest

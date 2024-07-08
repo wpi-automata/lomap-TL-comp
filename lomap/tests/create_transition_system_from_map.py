@@ -1,12 +1,12 @@
-from a_star import *
-from create_graph_from_map import *
+from lomap.tests.a_star import *
+from lomap.tests.create_graph_from_map import *
 import networkx as nx
 import math
 import copy
 import unittest
 import string
 from collections import Counter
-from test_map_word_accepted_randomized_occupancy_grid import *
+from lomap.tests.test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.classes import Buchi, Ts
 
 EMPTY_SYMBOL_NUMERIC='0'

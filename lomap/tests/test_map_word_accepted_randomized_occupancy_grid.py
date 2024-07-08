@@ -25,7 +25,7 @@ from lomap import Fsa, Ts, ts_times_fsa, ts_times_ts
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import csv
-from a_star import *
+from lomap.tests.a_star import *
 import math
 
 import sys

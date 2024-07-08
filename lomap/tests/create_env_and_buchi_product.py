@@ -1,4 +1,4 @@
-from create_transition_system_from_map import *
+from lomap.tests.create_transition_system_from_map import *
 from lomap.algorithms.product import ts_times_buchi
 import networkx as nx
 
