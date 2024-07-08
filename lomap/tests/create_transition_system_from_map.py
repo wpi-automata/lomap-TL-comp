@@ -9,7 +9,8 @@ from collections import Counter
 from test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.classes import Buchi, Ts
 
-EMPTY_SYMBOL='0'
+EMPTY_SYMBOL_NUMERIC='0'
+EMPTY_SYMBOL='{}'
 WALL_SYMBOL = '#'
 
 # Load map, start and goal point.
@@ -38,9 +39,20 @@ def assign_props(grid):
     props = dict()
     reduced = list(set(i for j in grid for i in j))
     reduced.sort()
+    if EMPTY_SYMBOL in reduced:
+        reduced.remove(EMPTY_SYMBOL)
 
-    single_chars=[x for x in reduced if (len(x)==1 and x!=EMPTY_SYMBOL and x!=WALL_SYMBOL)]
-    props['{}'] = 0
+    single_chars=[x for x in reduced if (len(x)==1 and x!=EMPTY_SYMBOL_NUMERIC and x!=WALL_SYMBOL)]
+    multi_chars=[x for x in reduced if (len(x)>1 and x!=EMPTY_SYMBOL_NUMERIC and x!=WALL_SYMBOL)]
+    
+    for mc in multi_chars:
+        for char in mc:
+            if char not in single_chars:
+                single_chars.append(char)
+
+    props[EMPTY_SYMBOL] = int(EMPTY_SYMBOL_NUMERIC)
+
+    single_chars = sorted(single_chars)
 
     for i in range(len(single_chars)):
         props[single_chars[i]] = 2**i
@@ -180,7 +192,7 @@ def case_2(simplfied_node_rep, node_outgoing_labels):
 
 def case_3(node_outgoing_labels):
     for key in node_outgoing_labels.keys():
-        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL in s]
+        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL_NUMERIC in s]
         for s in empty_symbols:
             node_outgoing_labels.get(key).remove(s)
 
@@ -389,6 +401,6 @@ class TestTSCreation(unittest.TestCase):
         self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
 if __name__ == '__main__':
-    # unittest.main()
+    unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv') #TODO: fix example6, floating islands due to 0 -> islands being cut.
