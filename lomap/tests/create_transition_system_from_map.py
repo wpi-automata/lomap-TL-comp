@@ -122,7 +122,7 @@ def prune_labels(nodes, edges, labels, spl):
         case_1(node, node_outgoing_labels, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
         case_3(node_outgoing_labels)
-        # case_5(node_outgoing_labels)
+        case_5(node_outgoing_labels)
 
         # prune "finalized" labels according to updated outgoing labels for each node
         for key in node_outgoing_labels.keys():
@@ -210,7 +210,9 @@ def case_4(nodes, edges, pruned_labels):
                 if other_node not in to_remove:
                     if int(float(node)) == int(float(other_node)): # reduced node labels are the same
                         other_node_incoming_labels, other_node_outgoing_labels = get_node_edge_labels(other_node, pruned_labels)
-                        if node_incoming_labels==other_node_incoming_labels and node_outgoing_labels==other_node_outgoing_labels:
+                        #check if all the ingoing and outgoing labels are the same. Because some nodes will have a value with an appendix, e.g. 1.0 or 1.1, those need to be cast to an int to be considered equal
+                        if {int(float(k)): v for k, v in node_incoming_labels.items()} == {int(float(k)): v for k, v in other_node_incoming_labels.items()} and \
+                            {int(float(k)): v for k, v in node_outgoing_labels.items()} == {int(float(k)): v for k, v in other_node_outgoing_labels.items()}:
                             key = int(float(node))
                             if key in to_remove:
                                 to_remove_nodes = to_remove[int(float(node))]
