@@ -117,12 +117,12 @@ def prune_labels(nodes, edges, labels, spl):
     for node in nodes:
         simplfied_node_rep = str(math.floor(float(node)))
 
-        node_incoming_labels, node_outgoing_labels = get_node_edge_labels(node, pruned_labels)
+        _, node_outgoing_labels = get_node_edge_labels(node, pruned_labels)
 
         case_1(node, node_outgoing_labels, spl)
         case_2(simplfied_node_rep, node_outgoing_labels)
         case_3(node_outgoing_labels)
-        case_5(node_outgoing_labels)
+        # case_5(node_outgoing_labels)
 
         # prune "finalized" labels according to updated outgoing labels for each node
         for key in node_outgoing_labels.keys():
@@ -192,7 +192,7 @@ def case_2(simplfied_node_rep, node_outgoing_labels):
 
 def case_3(node_outgoing_labels):
     for key in node_outgoing_labels.keys():
-        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL_NUMERIC in s]
+        empty_symbols = [s for s in node_outgoing_labels.get(key) if EMPTY_SYMBOL_NUMERIC == s]
         for s in empty_symbols:
             node_outgoing_labels.get(key).remove(s)
 
@@ -403,4 +403,4 @@ class TestTSCreation(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv') #TODO: fix example6, floating islands due to 0 -> islands being cut.
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example8.csv')
