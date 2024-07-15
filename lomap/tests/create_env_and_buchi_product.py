@@ -2,16 +2,12 @@ from lomap.tests.create_transition_system_from_map import *
 from lomap.algorithms.product import ts_times_buchi
 import networkx as nx
 
-def main():
+def create_product(map_path, start_state, spec):
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    # ts, ts_props = create_ts('maps/alphabetical_maps/office_world.csv', '{}')
-    ts, ts_props = create_ts('maps/unit_test_maps/alphabetical_maps/example8.csv', '{}')
+    ts, ts_props = create_ts(map_path, start_state)
 
-    # spec = '(F (f & X (F d))) & (G ! g) '
-    # spec = '(F h) & (! h U f)'
-    spec = 'F e'
     buchi = Buchi()
     buchi.from_formula(spec)
     print('Created Buchi automaton of size', buchi.size())
@@ -35,19 +31,28 @@ def main():
     Because we are taking the product between an LTL spec buchi and a TS, we have only one input state, but many possible final states.
     To find the shortest possible trajectory, we must compare all possible input state to final state pairs and the path length they produce.
     '''
-    # shortest_trajectory = None
-    # for f in iter(pa.final):
-    #     trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
-    #     if not shortest_trajectory or len(trajectory) < len(shortest_trajectory):
-    #         shortest_trajectory = trajectory
+    shortest_trajectory = None
+    for f in iter(pa.final):
+        trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
+        if not shortest_trajectory or len(trajectory) < len(shortest_trajectory):
+            shortest_trajectory = trajectory
 
-    # print('Shortest Trajectory: ', shortest_trajectory)
+    print('Shortest Trajectory: ', shortest_trajectory)
 
-    # print('Accepted word:', pa.word_from_trajectory(shortest_trajectory))
+    shortest_word = pa.word_from_trajectory(shortest_trajectory)
+
+    print('Accepted word:', shortest_word)
 
     draw_graph(pa.g, labels=labels)
     plt.show()
+
+    return shortest_word
     
 if __name__ == '__main__':
-    
-    main()
+
+    # spec = '(F (f & X (F d))) & (G ! g) '
+    # spec = '(F h) & (! h U f)'
+    # shortest_word = create_product('maps/alphabetical_maps/office_world.csv', '{}', spec)
+
+    spec = 'F e'
+    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example7.csv', '{}', spec)

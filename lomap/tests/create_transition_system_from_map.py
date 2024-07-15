@@ -74,6 +74,8 @@ def create_numerical_grid(props, symbol_grid):
                     sum += props.get(letter)
                 grid[row][col] = sum
                 props[val] = sum
+            elif val == WALL_SYMBOL:
+                pass
             else:
                 print("ERROR parsing grid from symbols to binary numerical translation")
     
@@ -135,7 +137,7 @@ def prune_labels(nodes, edges, labels, spl):
 
 '''
 CASES:
-1) if any outgoing edges share transition label, only keep label on the closest edge(s)
+1) if any outgoing edges share transition label, only keep label on the closest edge. If edges all the same distance, remove from all.
 2) if there is an outgoing edge containing same label as node remove it 
 3) remove empty symbol from transition
 4) if nodes and transitions are the same, combine them
@@ -154,9 +156,9 @@ def case_1(node, node_outgoing_labels, spl):
         node_outgoing_label_intersections = [k for k,v in Counter(list_of_all_edge_values).items() if v>1]
 
         # node_outgoing_label_intersections = set.intersection(*[set(x) for x in node_outgoing_labels.values()]) #this does not work because if 2/3 edges share label it won't recognize
-        print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
+        # print(f"outgoing edge intersection for node {node}: {node_outgoing_label_intersections}")
         if len(node_outgoing_label_intersections) > 0: #if more than one reduced (eg. 1.1, 1.0 = 1) label on different outgoing edges match
-            print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
+            # print(f"node_outgoing_labels {node}: {node_outgoing_labels}")
 
             # loop through all the shared transition labels 
             for shared in node_outgoing_label_intersections:
@@ -294,25 +296,24 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
 
-    print(f"replaced grid: {grid}")
+    # print(f"replaced grid: {grid}")
 
     # draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
     clean_clusters(clusters)
-    print(f"Clusters: {clusters}")
+    # print(f"Clusters: {clusters}")
     unique_clusters = each_cluster_uuid(clusters)
-    print(f"Unique Clusters: {unique_clusters}")
+    # print(f"Unique Clusters: {unique_clusters}")
     edges = create_graph(unique_clusters)
-    print(f"Edges: {edges}")
+    # print(f"Edges: {edges}")
     reversed_edges = [sublist[::-1] for sublist in edges[::-1]]
-    print(f"Reversed Edges: {reversed_edges}")
-    edges.extend(reversed_edges)
+    # print(f"Reversed Edges: {reversed_edges}")
+    edges.extend(reversed_edges)        
 
     intermediate_G = nx.DiGraph()
     intermediate_G.add_edges_from(edges)
 
     spl = dict(nx.all_pairs_shortest_path_length(intermediate_G))
-    print(f"Shortest path length: {spl}")
     
     labels = create_transitions(intermediate_G, edges, list(unique_clusters.keys()), spl)
     labels = prune_labels(list(unique_clusters.keys()), edges, labels, spl)
@@ -405,4 +406,4 @@ class TestTSCreation(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example8.csv')
+    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example6.csv')
