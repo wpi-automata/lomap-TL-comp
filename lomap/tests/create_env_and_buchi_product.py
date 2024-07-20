@@ -39,6 +39,10 @@ def create_product(map_path, start_state, spec):
 
     print('Shortest Trajectory: ', shortest_trajectory)
 
+    if not shortest_trajectory:
+        print(f"No trajectory found, returning None")
+        return None
+
     shortest_word = pa.word_from_trajectory(shortest_trajectory)
 
     print('Accepted word:', shortest_word)
