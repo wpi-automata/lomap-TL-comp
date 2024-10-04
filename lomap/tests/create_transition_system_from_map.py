@@ -190,7 +190,7 @@ def case_1(nodes, edges, pruned_labels):
             edges.extend(edges_updated)
 
 def case_2(node, node_outgoing_labels, spl):
-    if len(list(node_outgoing_labels.keys())) > 1: #if there is more than one outgoing edge
+    if len(list(node_outgoing_labels.keys())) > 1: #and node != EMPTY_SYMBOL_NUMERIC: #if there is more than one outgoing edge
 
         #if item duplicated in list of all edge labels concanated then it occurs on at least more than one edge
         list_of_all_edge_values = [elem for sublist in list(node_outgoing_labels.values()) for elem in sublist]
@@ -409,6 +409,6 @@ class TestTSCreation(unittest.TestCase):
         self.assertEqual(sorted(dict(ts.g.adjacency())), sorted(adj))
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    # ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example8.csv', prune=True)
+    ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example7.csv', prune=True)

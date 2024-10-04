@@ -27,6 +27,7 @@ def create_product(map_path, start_state, spec):
 
     print('Product initial states:', pa.init) # initial states
     print('Product accepting states:', pa.final) # final states 
+
     '''
     Because we are taking the product between an LTL spec buchi and a TS, we have only one input state, but many possible final states.
     To find the shortest possible trajectory, we must compare all possible input state to final state pairs and the path length they produce.
@@ -58,5 +59,5 @@ if __name__ == '__main__':
     # spec = '(F h) & (! h U f)'
     # shortest_word = create_product('maps/alphabetical_maps/office_world.csv', '{}', spec)
 
-    spec = 'F e'
-    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example7.csv', '{}', spec)
+    spec = '(F a) & (F b)'
+    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example9.csv', '{}', spec)
