@@ -2,11 +2,11 @@ from lomap.tests.create_transition_system_from_map import *
 from lomap.algorithms.product import ts_times_buchi
 import networkx as nx
 
-def create_product(map_path, start_state, spec):
+def create_product(map_path, start_state, spec, prune=True):
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts(map_path, start_state)
+    ts, ts_props = create_ts(map_path, start_state, prune)
 
     buchi = Buchi()
     buchi.from_formula(spec)
