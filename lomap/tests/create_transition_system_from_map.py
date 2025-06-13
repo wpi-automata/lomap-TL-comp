@@ -1,3 +1,4 @@
+import os
 from lomap.tests.a_star import *
 from lomap.tests.create_graph_from_map import *
 import networkx as nx
@@ -20,6 +21,7 @@ def load_symbol_map(file_path):
     goal = [0, 0]
     # Load from the file
     with open(file_path, 'r') as map_file:
+        wut = os.getcwd()
         reader = csv.reader(map_file)
         for i, row in enumerate(reader):
             # load start and goal point
@@ -54,10 +56,13 @@ def assign_props(grid):
 
     single_chars = sorted(single_chars)
 
-    for i in range(len(single_chars)):
-        props[single_chars[i]] = 2**i
+    char_to_prop(single_chars, props)
 
     return props
+
+def char_to_prop(single_chars, props):
+     for i in range(len(single_chars)):
+        props[single_chars[i]] = 2**i
 
 def create_numerical_grid(props, symbol_grid):
 
@@ -293,10 +298,13 @@ def clean_clusters(clusters):
     if WALL_SYMBOL in clusters.keys():
         del clusters[WALL_SYMBOL]
 
-def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv", init_node='a', prune=True):
+def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv", init_node='a', prune=True, display=True):
     '''
     Map must only contain empty set '{}' or alphabetical values
     '''
+
+    print(f"pruning: {prune}")
+    
     symbol_grid, start, goal = load_symbol_map(map_path)
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
@@ -337,7 +345,8 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     ts.g = G
     ts.init = {init_node}
 
-    draw_graph(G, label_mapping)
+    if display:
+        draw_graph(G, label_mapping)
 
     return ts, props
 

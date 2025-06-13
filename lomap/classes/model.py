@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import networkx as nx
+from ast import literal_eval
 
 # TODO: always use safe load
 from yaml import load, dump #, safe_load as load
@@ -101,7 +102,7 @@ class Model(object):
             nx.draw_networkx_edges(self.g, pos, edgelist=self.g.edges())
         
             labels = {n: d['attr_dict']['abbrev_label'] for n, d in self.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
-
+            
             if labels:
                 nx.draw_networkx_labels(self.g, pos=pos, labels=labels)
             else:            
@@ -125,24 +126,34 @@ class Model(object):
         with open(filename, 'w') as fout:
             dump(self, fout, Dumper=Dumper)
 
-    def word_from_trajectory(self, trajectory):
-        possible_words = []
+    def word_from_trajectory(self, trajectory, labels=None):
         word = []
 
-        for state, next_state in zip(trajectory, trajectory[1:]):
-            symbols = self.g[state][next_state]['pi']
-            possible_words.append(symbols) # list of lists of possible policies to take on each transition edge
+        if labels:
+            for n in trajectory:
+                symbol = literal_eval(labels.get(n))[0]
+                print(symbol)
+                if symbol != '{}':
+                    word.append(symbol)
 
-        #simplify the trajectory by seeing if there is an intersection (same policy) on subsequent edges
-        for possible_word, next_possible_word in zip(possible_words, possible_words[1:]):
-            intersection = list(set(possible_word) & set(next_possible_word))
-            if intersection:
-                word.append(intersection[0])
-            else:
-                word.append(possible_word[0])
-        
-        #need to add final symbol
-        word.append(possible_words[-1][0])
-        #remove duplicates
-        word = list(dict.fromkeys(word))
+        else:
+            
+            possible_words = []
+
+            for state, next_state in zip(trajectory, trajectory[1:]):
+                symbols = self.g[state][next_state]['pi']
+                possible_words.append(symbols) # list of lists of possible policies to take on each transition edge
+
+            #simplify the trajectory by seeing if there is an intersection (same policy) on subsequent edges
+            for possible_word, next_possible_word in zip(possible_words, possible_words[1:]):
+                intersection = list(set(possible_word) & set(next_possible_word))
+                if intersection:
+                    word.append(intersection[0])
+                else:
+                    word.append(possible_word[0])
+            
+            #need to add final symbol
+            word.append(possible_words[-1][0])
+            #remove duplicates
+            word = list(dict.fromkeys(word))
         return word

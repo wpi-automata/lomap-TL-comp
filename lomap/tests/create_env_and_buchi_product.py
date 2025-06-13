@@ -1,33 +1,33 @@
 from lomap.tests.create_transition_system_from_map import *
 from lomap.algorithms.product import ts_times_buchi
 import networkx as nx
+from ast import literal_eval
 
-def create_product(map_path, start_state, spec, prune=True):
+def create_product(map_path, start_state, spec, prune=True, display=False):
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts(map_path, start_state, prune)
+    ts, ts_props = create_ts(map_path, start_state, prune, display)
 
     buchi = Buchi()
     buchi.from_formula(spec)
+    buchi_edge_labels = {(u, v): d['attr_dict']['label'] for u, v, d in buchi.g.edges(data=True) if ('attr_dict' in d and 'label' in d['attr_dict'])}
     print('Created Buchi automaton of size', buchi.size())
-    buchi.visualize(draw='matplotlib')
-    plt.show()
+    if display:
+        buchi.visualize(edgelabel=buchi_edge_labels, draw='matplotlib')
+        plt.show()
 
     pa = ts_times_buchi(ts, buchi, ts_props, multi=False)
     print('Created product automaton of size', pa.size())
 
-    #Add policy labels from transition system to product automaton
-    labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
-    ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
-
-    for edge in pa.g.edges():
-        if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
-            pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
+    if display:
+        pa.visualize(draw='matplotlib')
+        plt.show()
 
     print('Product initial states:', pa.init) # initial states
     print('Product accepting states:', pa.final) # final states 
 
+    labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
     '''
     Because we are taking the product between an LTL spec buchi and a TS, we have only one input state, but many possible final states.
     To find the shortest possible trajectory, we must compare all possible input state to final state pairs and the path length they produce.
@@ -35,7 +35,8 @@ def create_product(map_path, start_state, spec, prune=True):
     shortest_trajectory = None
     for f in iter(pa.final):
         trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
-        if not shortest_trajectory or len(trajectory) < len(shortest_trajectory):
+        if (not shortest_trajectory or len(trajectory) < len(shortest_trajectory)) and \
+        (literal_eval(labels.get(f))[0] != '{}'): # has !{} because can't run policy for {} so can't get to final node if {}
             shortest_trajectory = trajectory
 
     print('Shortest Trajectory: ', shortest_trajectory)
@@ -43,13 +44,16 @@ def create_product(map_path, start_state, spec, prune=True):
     if not shortest_trajectory:
         print(f"No trajectory found, returning None")
         return None
-
-    shortest_word = pa.word_from_trajectory(shortest_trajectory)
+    
+    #Add policy labels from transition system to product automaton - THIS CAUSES ERRORS BECAUSE MIGHT NOT ADHERE TO SPEC - UNSAFE!
+    #Uncomment below 4 lines and remove labels from word_from_trajectory to run old shortest word code
+    # ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
+    # for edge in pa.g.edges():
+    #     if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
+    #         pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
+    shortest_word = pa.word_from_trajectory(shortest_trajectory, labels=labels)
 
     print('Accepted word:', shortest_word)
-
-    draw_graph(pa.g, labels=labels)
-    plt.show()
 
     return shortest_word
     

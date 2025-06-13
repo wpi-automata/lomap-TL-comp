@@ -87,13 +87,15 @@ def draw_graph(nx_graph, labels=None):
     nx.draw_networkx_nodes(nx_graph, pos, ax=ax)
     nx.draw_networkx_labels(nx_graph, pos, labels=labels, ax=ax)
 
-    curved_edges = [edge for edge in nx_graph.edges() if reversed(edge) in nx_graph.edges()]
+    curved_edges = [edge for edge in nx_graph.edges() if list(reversed(edge)) in nx_graph.edges()]
     straight_edges = list(set(nx_graph.edges()) - set(curved_edges))
     nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=straight_edges)
     arc_rad = 0.25
     nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=curved_edges, connectionstyle=f'arc3, rad = {arc_rad}')
 
     edge_labels = nx.get_edge_attributes(nx_graph,'pi')
+    # if not edge_labels:
+    #     edge_labels = nx.get_edge_attributes(nx_graph,'attr_dict')
     curved_edge_labels = {edge: edge_labels[edge] for edge in curved_edges if edge in edge_labels}
     straight_edge_labels = {edge: edge_labels[edge] for edge in straight_edges if edge in edge_labels}
     my_draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=curved_edge_labels,rotate=False,rad = arc_rad)
