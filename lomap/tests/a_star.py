@@ -1,5 +1,6 @@
 #Author: Taylor Bergeron
 
+import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import csv
@@ -414,6 +415,7 @@ def four_connected_with_gx_check(node, visited, min_dimension, max_dimension_row
 
 # Load map, start and goal point.
 def load_map(file_path):
+    print(os.getcwd())
     grid = []
     start = [0, 0]
     goal = [0, 0]

@@ -322,7 +322,7 @@ def ts_times_buchi(ts, buchi, ts_props={}, multi=True):
                     product_model.g.add_node(next_state, attr_dict=attr_dict)
 
                     # Add transition w/ weight
-                    attr_dict = {'weight': weight, 'control': control}
+                    attr_dict = {'weight': weight, 'control': control, 'pi': next_prop}
                     product_model.g.add_edge(cur_state, next_state,
                                              attr_dict=attr_dict)
 
