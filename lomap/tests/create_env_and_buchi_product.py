@@ -3,7 +3,7 @@ from lomap.algorithms.product import ts_times_buchi
 import networkx as nx
 from ast import literal_eval
 
-def create_product(map_path, start_state, spec, prune=True, display=False):
+def create_product(map_path, start_state, spec, prune=False, display=True):
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
@@ -63,5 +63,5 @@ if __name__ == '__main__':
     # spec = '(F h) & (! h U f)'
     # shortest_word = create_product('maps/alphabetical_maps/office_world.csv', '{}', spec)
 
-    spec = '(F a) & (F b)'
-    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example9.csv', '{}', spec)
+    spec = '(F coffee)'
+    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example9 copy.csv', '{}', spec)

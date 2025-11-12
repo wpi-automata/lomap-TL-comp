@@ -1,0 +1,13 @@
+start,1,8,,,,,,,
+goal,7,7,,,,,,,
+{},{},{},{},{},{},{},{},{},{}
+{},weld,weld,weld,weld,{},{},{},{},{}
+{},weld,coffee,coffee,weld,{},{},{},{},{}
+{},weld,coffee,coffee,weld,{},{},{},{},{}
+{},weld,weld,weld,weld,{},{},{},{},{}
+{},{},{},{},{},{},{},{},{},{}
+{},{},{},{},{},cafe,cafe,cafe,cafe,{}
+{},{},{},{},{},cafe,coffee,coffee,cafe,{}
+{},{},{},{},{},cafe,coffee,coffee,cafe,{}
+{},{},{},{},{},cafe,cafe,cafe,cafe,{}
+{},{},{},{},{},{},{},{},{},{}
