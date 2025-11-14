@@ -320,6 +320,46 @@ class Buchi(Automaton):
 
         automaton_from_spin(self, formula, lines)
 
+    def is_word_accepted(self, word, states=None, return_blocking=False):
+        """
+        Checks whether the input word is accepted by the Buchi.
+
+        Parameters
+        ----------
+        word : iterable
+            Finite input word over symbols from the alphabet
+        states : hashable
+            State to start accepting the word from. If the states are `None`,
+            the initial states of the automaton are used.
+        return_blocking : bool (default: False)
+            If True, returns blocking states and symbol pair.
+
+        Returns
+        -------
+        is_accepted: bool
+            Boolean value indicating whether the input word was accepted.
+        (states, symbol) : pair of states and symbol (optional)
+            The blocking states and symbol pair.
+
+        Raises
+        ------
+        AssertionError
+            If `state` is not a node of the automaton graph.
+        """
+        if states is None:
+            states = self.init
+        assert all(state in self.g for state in states)
+
+        for symbol in word:
+            next_states = set.union(*[set(self.next_states(state, symbol))
+                                     for state in states])
+            if not next_states:
+                if return_blocking:
+                    return False, (states, symbol)
+                return False
+            states = next_states
+        return bool(states & self.final)
+
 
 class Fsa(Automaton):
     """

@@ -45,17 +45,25 @@ def create_product(map_path, start_state, spec, prune=True, display=False):
         print(f"No trajectory found, returning None")
         return None
     
-    #Add policy labels from transition system to product automaton - THIS CAUSES ERRORS BECAUSE MIGHT NOT ADHERE TO SPEC - UNSAFE!
+    #Add policy labels from transition system to product automaton - THIS CAUSES ERRORS BECAUSE MIGHT NOT ADHERE TO SPEC - UNSAFE! - added buchi check
     #Uncomment below 4 lines and remove labels from word_from_trajectory to run old shortest word code
-    # ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
-    # for edge in pa.g.edges():
-    #     if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
-    #         pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
-    shortest_word = pa.word_from_trajectory(shortest_trajectory, labels=labels)
+    ts_edge_policies = {n: d['pi'] for n, d in ts.g.edges.items() if 'pi' in d}
+    for edge in pa.g.edges():
+        if (edge[0][0], edge[1][0]) in ts_edge_policies.keys():
+            pa.g[edge[0]][edge[1]]['pi'] = ts_edge_policies[(edge[0][0], edge[1][0])]
+    shortest_word = pa.policies_and_goals_from_trajectory(shortest_trajectory, labels=labels)
+    # shortest_word = pa.word_from_trajectory(shortest_trajectory, labels=labels)
 
     print('Accepted word:', shortest_word)
 
     return shortest_word
+
+    # word_satisfies_spec = buchi.is_word_accepted(shortest_word)
+    # print('Buchi accepts word:', word_satisfies_spec)
+
+    # if word_satisfies_spec:
+    #     return shortest_word
+    # return None
     
 if __name__ == '__main__':
 
@@ -63,5 +71,5 @@ if __name__ == '__main__':
     # spec = '(F h) & (! h U f)'
     # shortest_word = create_product('maps/alphabetical_maps/office_world.csv', '{}', spec)
 
-    spec = '(F a) & (F b)'
-    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example9.csv', '{}', spec)
+    spec = '(F a) & (F d)'
+    shortest_word = create_product('maps/unit_test_maps/alphabetical_maps/example10.csv', '{}', spec)

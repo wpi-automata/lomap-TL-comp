@@ -102,7 +102,10 @@ class Model(object):
             nx.draw_networkx_edges(self.g, pos, edgelist=self.g.edges())
         
             labels = {n: d['attr_dict']['abbrev_label'] for n, d in self.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
-            
+
+            # print(labels)
+            # for l in pos:  # raise text positions
+            #     pos[l][1] += 0.1  # probably small value enough
             if labels:
                 nx.draw_networkx_labels(self.g, pos=pos, labels=labels)
             else:            
@@ -157,3 +160,33 @@ class Model(object):
             #remove duplicates
             word = list(dict.fromkeys(word))
         return word
+
+
+    def policies_and_goals_from_trajectory(self, trajectory, labels=None):
+            
+        policies_and_goals = []
+
+        for state, next_state in zip(trajectory, trajectory[1:]):
+            goal_symbol = literal_eval(labels.get(next_state))[0]
+            if goal_symbol != '{}':
+                policy_symbols = self.g[state][next_state]['pi']
+                policies_and_goal={
+                    'policy': policy_symbols,
+                    'goal': goal_symbol
+                }
+                policies_and_goals.append(policies_and_goal)
+
+        all_policies = []
+        for policies_and_goal in policies_and_goals:
+            all_policies.append(policies_and_goal['policy'])
+        
+        for pg, next_pg in zip(policies_and_goals, policies_and_goals[1:]):
+            intersection = list(set(pg['policy']) & set(next_pg['policy']))
+            if intersection:
+                pg['policy'] = intersection[0]
+                next_pg['policy'] = intersection[0]
+            else:
+                pg['policy'] = pg['policy'][0]
+                next_pg['policy'] = next_pg['policy'][0]
+
+        return policies_and_goals
