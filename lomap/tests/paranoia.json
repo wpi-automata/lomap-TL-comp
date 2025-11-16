@@ -1,0 +1,158 @@
+[
+    {
+        "hazard": "collision with furniture while navigating toward the couch",
+        "probability": 0.4,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "couch",
+            "coffee table",
+            "end table",
+            "tv stand",
+            "wall"
+        ],
+        "danger_score": 2.4000000000000004
+    },
+    {
+        "hazard": "entanglement or dragging of power/av cables near the television",
+        "probability": 0.25,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "television",
+            "game console",
+            "set-top box",
+            "power strip",
+            "extension cord",
+            "hdmi cables"
+        ],
+        "danger_score": 1.5
+    },
+    {
+        "hazard": "loss of traction on loose rugs, mats, or floor transitions",
+        "probability": 0.3,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "area rug",
+            "runner",
+            "doormat",
+            "threshold strip",
+            "hardwood",
+            "tile"
+        ],
+        "danger_score": 1.7999999999999998
+    },
+    {
+        "hazard": "fall from a stair/step or sunken living area edge",
+        "probability": 0.1,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "low",
+        "objects": [
+            "robot",
+            "staircase",
+            "step-down",
+            "landing",
+            "railing"
+        ],
+        "danger_score": 1.6
+    },
+    {
+        "hazard": "wedging under low-clearance furniture or catching on couch skirts",
+        "probability": 0.2,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "couch",
+            "sofa skirt",
+            "low shelf",
+            "tv console",
+            "recliner base"
+        ],
+        "danger_score": 1.2000000000000002
+    },
+    {
+        "hazard": "collision with pets or children moving unpredictably",
+        "probability": 0.2,
+        "minor_injury": "medium",
+        "major_injury": "low",
+        "death": "low",
+        "objects": [
+            "robot",
+            "dog",
+            "cat",
+            "child",
+            "toys"
+        ],
+        "danger_score": 3.4000000000000004
+    },
+    {
+        "hazard": "impact from a swinging door or pinching in a doorway",
+        "probability": 0.15,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "door",
+            "door hinge",
+            "doorstop",
+            "doorway"
+        ],
+        "danger_score": 0.8999999999999999
+    },
+    {
+        "hazard": "sensor misread due to reflective/glossy surfaces causing misnavigation",
+        "probability": 0.15,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "television screen",
+            "glass coffee table",
+            "mirror",
+            "glossy floor"
+        ],
+        "danger_score": 0.8999999999999999
+    },
+    {
+        "hazard": "slippery floor or spill near the kitchen boundary leading to loss of control",
+        "probability": 0.1,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "low",
+        "objects": [
+            "robot",
+            "kitchen boundary",
+            "tile floor",
+            "spilled liquid",
+            "grease"
+        ],
+        "danger_score": 1.6
+    },
+    {
+        "hazard": "contact with a space heater or hot appliance near the path",
+        "probability": 0.05,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "low",
+        "objects": [
+            "robot",
+            "space heater",
+            "heater power cord",
+            "curtains",
+            "sofa throw"
+        ],
+        "danger_score": 0.8
+    }
+]
