@@ -277,6 +277,9 @@ def ts_times_buchi(ts, buchi, ts_props={}, multi=True):
             else:
                 init_ts = str(ts_props[init_ts])
         init_prop =  ts.g.nodes[init_ts].get('prop',set())
+        # Convert string prop to set if necessary
+        if isinstance(init_prop, str):
+            init_prop = {init_prop}
         # Iterate over the initial states of the FSA
         for init_buchi in buchi.init:
             # Add the initial states to the graph and mark them as initial
@@ -305,6 +308,9 @@ def ts_times_buchi(ts, buchi, ts_props={}, multi=True):
         for ts_next in ts.next_states_of_wts(ts_state, traveling_states=False):
             ts_next_state = ts_next[0]
             ts_next_prop = ts.g.nodes[ts_next_state].get('prop',set())
+            # Convert string prop to set if necessary
+            if isinstance(ts_next_prop, str):
+                ts_next_prop = {ts_next_prop}
             weight = ts_next[1]
             control = ts_next[2]
             for buchi_next_state in buchi.next_states(buchi_state,
@@ -315,6 +321,9 @@ def ts_times_buchi(ts, buchi, ts_props={}, multi=True):
 
                 if(next_state not in product_model.g):
                     next_prop = ts.g.nodes[ts_next_state].get('prop',set())
+                    # Convert string prop to set if necessary
+                    if isinstance(next_prop, str):
+                        next_prop = {next_prop}
 
                     # Add the new state
                     attr_dict = {'prop': next_prop, 'abbrev_label': '{}'.format((ts_next_prop, next_state[1])),
