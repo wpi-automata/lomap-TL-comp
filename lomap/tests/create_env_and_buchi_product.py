@@ -80,6 +80,7 @@ if __name__ == '__main__':
     # shortest_word = create_product('maps/alphabetical_maps/office_world.csv', '{}', spec)
 
     # spec = 'F (b&d)'
-    spec = 'F d & (! d U b)'
+    # spec = 'F d & (! d U b)'
+    spec = 'F (b & d) & (! b U (d & c))'
     shortest_word = create_product(
         'lomap/lomap/tests/maps/unit_test_maps/alphabetical_maps/example11.csv', '{}', spec)

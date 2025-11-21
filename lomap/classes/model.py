@@ -169,16 +169,12 @@ class Model(object):
         for state, next_state in zip(trajectory, trajectory[1:]):
             goal_symbol = literal_eval(labels.get(next_state))[0]
             if goal_symbol != '{}':
-                policy_symbols = self.g[state][next_state]['pi'][0]
+                policy_symbols = self.g[state][next_state]['pi']
                 policies_and_goal={
                     'policy': policy_symbols,
                     'goal': goal_symbol
                 }
                 policies_and_goals.append(policies_and_goal)
-
-        all_policies = []
-        for policies_and_goal in policies_and_goals:
-            all_policies.append(policies_and_goal['policy'])
         
         for pg, next_pg in zip(policies_and_goals, policies_and_goals[1:]):
             intersection = list(set(pg['policy']) & set(next_pg['policy']))
@@ -188,5 +184,10 @@ class Model(object):
             else:
                 pg['policy'] = pg['policy'][0]
                 next_pg['policy'] = next_pg['policy'][0]
+
+        # cleanup: due to needing a set to take the intersection of pilicies, if only one policy it might be a list instead of a string
+        for pg in policies_and_goals:
+            if type(pg['policy']) == list:
+                pg['policy'] = pg['policy'][0]
 
         return policies_and_goals
