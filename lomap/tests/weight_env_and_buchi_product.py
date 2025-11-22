@@ -321,24 +321,48 @@ def parse_abbrev_label(pa):
     return pa_dict
 
 def extract_prop_from_label(label_string):
-    """Extract proposition from label string like "('1', 'T0_init')\n['a']" -> 'a'"""
-    print("Label string: ", type(label_string))
-    if '[' in str(label_string): 
-        # Split by newline and get the second part (the list)
-        parts = str(label_string).split('[')
+    """Extract proposition from label string like "('1', 'T0_init')\n['a']" -> 'a'
+    Returns the proposition in the same format as parse_abbrev_label (sorted, comma-separated string)
+    """
+    label_str = str(label_string)
+    
+    # Method 1: Try to extract from the list part after newline
+    if '\n' in label_str and '[' in label_str:
+        parts = label_str.split('\n')
         if len(parts) > 1:
-            list_part = parts[1].strip(']')  # Get ['a'] part
+            list_part = parts[1].strip()
             try:
-                # Parse the list and extract the first element
+                # Parse the list: ['a'] or ['d', 'e', 'l', 'w']
                 prop_list = literal_eval(list_part)
                 if prop_list:
-                    # Return first element, or join if multiple
-                    return ', '.join(sorted(prop_list)) if len(prop_list) > 1 else prop_list[0]
-            except (ValueError, SyntaxError):
+                    # Format exactly like parse_abbrev_label: sorted, comma-space separated
+                    if len(prop_list) > 1:
+                        return ', '.join(sorted(prop_list))
+                    else:
+                        return prop_list[0] if isinstance(prop_list[0], str) else str(prop_list[0])
+            except (ValueError, SyntaxError, TypeError):
                 pass
+    
+    # Method 2: Try to extract from bracket notation directly
+    if '[' in label_str:
+        # Find the content between [ and ]
+        start_idx = label_str.rfind('[')
+        end_idx = label_str.rfind(']')
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            list_content = label_str[start_idx:end_idx + 1]
+            try:
+                prop_list = literal_eval(list_content)
+                if prop_list:
+                    if len(prop_list) > 1:
+                        return ', '.join(sorted(prop_list))
+                    else:
+                        return prop_list[0] if isinstance(prop_list[0], str) else str(prop_list[0])
+            except (ValueError, SyntaxError, TypeError):
+                pass
+    
     return ''
 
-def weight_edges(pa, similarity_dict):
+def weight_edges(pa, similarity_dict, risk_dict):
     import networkx as nx
     is_multigraph = isinstance(pa.g, (nx.MultiDiGraph, nx.MultiGraph))
     
@@ -354,18 +378,16 @@ def weight_edges(pa, similarity_dict):
             print("Extracted prop: ", prop_string)
             # Find the similarity between the labels
             if prop_string in similarity_dict:
-                # similarity_dict structure: {prop_string: [{risk_label: similarity}, ...]}
-                # You may want to get the max similarity or handle multiple matches
-                max_similarity = 0.0
-                for match in similarity_dict[prop_string]:
-                    max_similarity = max(max_similarity, max(match.values()))
-                print("Similarity: ", max_similarity)
-                # Weight the edge - access through graph object with key for MultiDiGraph
-                if 'attr_dict' in pa.g[u][v][key]:
-                    pa.g[u][v][key]['attr_dict']['weight'] = max_similarity
-                else:
-                    # If attr_dict doesn't exist, create it
-                    pa.g[u][v][key]['attr_dict'] = {'weight': max_similarity}
+                # get the max similarity score
+                max_similarity = max(similarity_dict[prop_string][0].values())
+                max_similarity_label = max(similarity_dict[prop_string][0].keys())
+                print("Max similarity: ", max_similarity)
+                print("Max similarity label: ", max_similarity_label)
+                # Now we need to find the object in risk_dict
+                risk_label = risk_dict[max_similarity_label]['danger_score']
+                print("Risk label: ", risk_label)
+                # Now we need to update the weight of the edge
+                pa.g[u][v][key]['attr_dict']['weight'] = risk_label
                 print(f"Updated weight to: {pa.g[u][v][key]['attr_dict'].get('weight', 'N/A')}")
             else:
                 print(f"No similarity found for prop '{prop_string}'")
@@ -381,19 +403,17 @@ def weight_edges(pa, similarity_dict):
             print("Extracted prop: ", prop_string)
             # Find the similarity between the labels
             if prop_string in similarity_dict:
-                # similarity_dict structure: {prop_string: [{risk_label: similarity}, ...]}
-                # You may want to get the max similarity or handle multiple matches
-                max_similarity = 0.0
-                for match in similarity_dict[prop_string]:
-                    max_similarity = max(max_similarity, max(match.values()))
-                print("Similarity: ", max_similarity)
-                # Weight the edge - access through graph object to ensure modification
-                if 'attr_dict' in pa.g[u][v]:
-                    pa.g[u][v]['attr_dict']['weight'] = max_similarity
-                else:
-                    # If attr_dict doesn't exist, create it
-                    pa.g[u][v]['attr_dict'] = {'weight': max_similarity}
-                print(f"Updated weight to: {pa.g[u][v]['attr_dict'].get('weight', 'N/A')}")
+               # get the max similarity score
+                max_similarity = max(similarity_dict[prop_string][0].values())
+                max_similarity_label = max(similarity_dict[prop_string][0].keys())
+                print("Max similarity: ", max_similarity)
+                print("Max similarity label: ", max_similarity_label)
+                # Now we need to find the object in risk_dict
+                risk_label = risk_dict[max_similarity_label]['danger_score']
+                print("Risk label: ", risk_label)
+                # Now we need to update the weight of the edge
+                pa.g[u][v][key]['attr_dict']['weight'] = risk_label
+                print(f"Updated weight to: {pa.g[u][v][key]['attr_dict'].get('weight', 'N/A')}")
             else:
                 print(f"No similarity found for prop '{prop_string}'")
     return pa
@@ -417,8 +437,8 @@ def main():
 
     # Define example specification and calculate product automaton
     # TODO: Change map to match paranoia output 
-    spec = '(F b)'
-    shortest_word, pa = create_product('maps/unit_test_maps/alphabetical_maps/example9.csv', '{}', spec, display=False)
+    spec = '(F coffee)'
+    shortest_word, pa = create_product('maps/unit_test_maps/alphabetical_maps/example9 copy.csv', '{}', spec, display=False)
 
     # Now organize the labels in a dict so we can encode them and get their relationship
     pa_dict = parse_abbrev_label(pa)
@@ -451,7 +471,7 @@ def main():
                 risk_data['embedding'].unsqueeze(0)
             )
             print(f"Cosine similarity between '{pa_label}' and '{risk_label}': {similarity.item():.4f}")
-            if similarity.item() > 0.5:
+            if similarity.item() > 0.65:
                 print(f"Objects '{pa_label}' and '{risk_label}' are the same")
                 if pa_label not in similarity_dict:
                     similarity_dict[pa_label] = []
@@ -461,7 +481,7 @@ def main():
 
     # Weight the edges of the product automaton based on the cosine similarity
     # Return the weighted product automaton
-    pa = weight_edges(pa, similarity_dict)
+    pa = weight_edges(pa, similarity_dict, risk_dict)
     
     # Extract edge weights for visualization
     # At the end of your main() function, replace the visualization with:

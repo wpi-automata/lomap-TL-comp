@@ -7,11 +7,7 @@
         "death": "none",
         "objects": [
             "robot",
-            "couch",
-            "coffee table",
-            "end table",
-            "tv stand",
-            "wall"
+            "welding machine"
         ],
         "danger_score": 2.4000000000000004
     },
@@ -23,12 +19,8 @@
         "death": "none",
         "objects": [
             "robot",
-            "television",
-            "game console",
-            "set-top box",
-            "power strip",
-            "extension cord",
-            "hdmi cables"
+            "cafe",
+            "game console"
         ],
         "danger_score": 1.5
     }
