@@ -148,15 +148,15 @@ def visualize_weighted_graph(pa, edge_weights=None, figsize=(16, 12), highlight_
         if is_path_edge:
             color = '#FFD700'  # Gold for path edges
             alpha = 0.95
-            linewidth = 4
+            linewidth = 2.5
         elif weight is not None:
             color = plt.cm.RdYlGn_r(weight)
             alpha = 0.6 + 0.4 * weight
-            linewidth = 2 + 2 * weight
+            linewidth = 1.5 + 1 * weight  # Thinner edges
         else:
             color = 'gray'
             alpha = 0.4
-            linewidth = 1.5
+            linewidth = 1.0
         
         # Draw curved arrow with more prominent arrowhead
         arrow = FancyArrowPatch(
@@ -216,12 +216,11 @@ def visualize_weighted_graph(pa, edge_weights=None, figsize=(16, 12), highlight_
             x1, y1 = pos[u]
             x2, y2 = pos[v]
             
-            # Parametric curve point at t=0.5 (midpoint)
-            # For arc3, the curve is a circular arc
+            # Calculate the actual position along the curved path
+            # Using parametric representation of the circular arc
             mid_x = (x1 + x2) / 2
             mid_y = (y1 + y2) / 2
             
-            # Offset perpendicular to the line
             dx = x2 - x1
             dy = y2 - y1
             norm = np.sqrt(dx**2 + dy**2)
@@ -231,8 +230,9 @@ def visualize_weighted_graph(pa, edge_weights=None, figsize=(16, 12), highlight_
                 perp_x = -dy / norm
                 perp_y = dx / norm
                 
-                # Offset amount increases with rad
-                offset_amount = rad * norm * 0.3
+                # The label should be offset based on the ACTUAL rad value used for THIS edge
+                # The curve goes in the direction of rad (positive rad = counterclockwise)
+                offset_amount = rad * norm * 0.5  # Adjusted multiplier for better positioning
                 
                 label_x = mid_x + perp_x * offset_amount
                 label_y = mid_y + perp_y * offset_amount
@@ -271,6 +271,128 @@ def visualize_weighted_graph(pa, edge_weights=None, figsize=(16, 12), highlight_
     plt.tight_layout()
     
     return fig, ax
+
+
+def get_shortest_path(pa, weight_attr='weight'):
+    """
+    Find the shortest path in the product automaton from initial state to accepting state.
+    
+    Args:
+        pa: Product automaton object with .g attribute (NetworkX graph)
+        weight_attr: Name of the weight attribute in edge attr_dict (default: 'weight')
+    
+    Returns:
+        list: List of nodes representing the shortest path, or None if no path exists
+    """
+    G = pa.g
+    
+    # Find initial state(s) - typically marked with 'init' in the name or attr_dict
+    initial_states = []
+    accepting_states = []
+    
+    for node in G.nodes():
+        node_data = G.nodes[node].get('attr_dict', {})
+        label = str(node_data.get('label', ''))
+        
+        # Check for initial state
+        if 'init' in label.lower() or node_data.get('init', False):
+            initial_states.append(node)
+        
+        # Check for accepting states - look for nodes that satisfy the specification
+        # In Büchi automata, accepting states often have specific propositions
+        if node_data.get('accepting', False):
+            accepting_states.append(node)
+    
+    # If no accepting states marked, look for nodes with the goal proposition
+    if not accepting_states:
+        for node in G.nodes():
+            node_data = G.nodes[node].get('attr_dict', {})
+            label = str(node_data.get('label', ''))
+            # Look for nodes with propositions in brackets (e.g., ['b'])
+            if '[' in label and ']' in label:
+                accepting_states.append(node)
+    
+    print(f"\nInitial states: {initial_states}")
+    print(f"Accepting states: {accepting_states}")
+    
+    if not initial_states:
+        print("Warning: No initial state found! Using first node.")
+        initial_states = [list(G.nodes())[0]]
+    
+    if not accepting_states:
+        print("Warning: No accepting states found! Cannot compute shortest path.")
+        return None
+    
+    # Function to get edge weight
+    def get_edge_weight(u, v, key=None):
+        """Extract weight from edge, handling both MultiDiGraph and DiGraph"""
+        try:
+            if key is not None:
+                edge_data = G[u][v][key]
+            else:
+                edge_data = G[u][v]
+            
+            weight = edge_data.get('attr_dict', {}).get(weight_attr, 1.0)
+            return weight if weight is not None else 1.0
+        except:
+            return 1.0
+    
+    # Try to find shortest path from each initial state to each accepting state
+    shortest_path = None
+    shortest_length = float('inf')
+    
+    for init_state in initial_states:
+        for accept_state in accepting_states:
+            try:
+                # For MultiDiGraph, we need to handle multiple edges
+                if isinstance(G, (nx.MultiDiGraph, nx.MultiGraph)):
+                    # Create a simple weighted graph for pathfinding
+                    simple_G = nx.DiGraph()
+                    
+                    # Add all nodes
+                    simple_G.add_nodes_from(G.nodes())
+                    
+                    # Add edges with minimum weight among parallel edges
+                    for u, v, key in G.edges(keys=True):
+                        w = get_edge_weight(u, v, key)
+                        if simple_G.has_edge(u, v):
+                            # Keep the minimum weight
+                            simple_G[u][v]['weight'] = min(simple_G[u][v]['weight'], w)
+                        else:
+                            simple_G.add_edge(u, v, weight=w)
+                    
+                    path = nx.shortest_path(simple_G, init_state, accept_state, weight='weight')
+                    path_length = nx.shortest_path_length(simple_G, init_state, accept_state, weight='weight')
+                else:
+                    # For regular DiGraph
+                    # Create weighted graph for pathfinding
+                    weighted_G = nx.DiGraph()
+                    weighted_G.add_nodes_from(G.nodes())
+                    
+                    for u, v in G.edges():
+                        w = get_edge_weight(u, v)
+                        weighted_G.add_edge(u, v, weight=w)
+                    
+                    path = nx.shortest_path(weighted_G, init_state, accept_state, weight='weight')
+                    path_length = nx.shortest_path_length(weighted_G, init_state, accept_state, weight='weight')
+                
+                print(f"Path from {init_state} to {accept_state}: {path} (length: {path_length:.3f})")
+                
+                if path_length < shortest_length:
+                    shortest_length = path_length
+                    shortest_path = path
+                    
+            except nx.NetworkXNoPath:
+                print(f"No path from {init_state} to {accept_state}")
+                continue
+    
+    if shortest_path:
+        print(f"\nShortest path found: {shortest_path}")
+        print(f"Total path weight: {shortest_length:.3f}")
+    else:
+        print("\nNo valid path found in the automaton!")
+    
+    return shortest_path
 
     
 def embed_labels(dict, model, tokenizer):
@@ -431,7 +553,7 @@ def main():
                 risk_dict[object] = {'danger_score': item['danger_score'], 'embedding': None}
             
             else: 
-                item['danger_score'] = item['danger_score'] + risk_dict[object]['danger_score'] # Sum the danger scores for each object, also may need to change...
+                risk_dict[object]['danger_score']  = item['danger_score'] + risk_dict[object]['danger_score'] # Sum the danger scores for each object, also may need to change...
 
     print(risk_dict)
 
@@ -492,43 +614,94 @@ def main():
     print(f"\\nProduct automaton graph type: {type(pa.g)}")
     print(f"Is MultiDiGraph: {isinstance(pa.g, nx.MultiDiGraph)}")
 
-    # Get the shortest path
-    labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
-    shortest_trajectory = None
-    for f in iter(pa.final):
-        trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
-        if (not shortest_trajectory or len(trajectory) < len(shortest_trajectory)) and \
-        (literal_eval(labels.get(f))[0] != '{}'): # has !{} because can't run policy for {} so can't get to final node if {}
-            shortest_trajectory = trajectory
-
-    print('Shortest Trajectory: ', shortest_trajectory)
+    # Get the shortest weighted path
+    def get_edge_weight(u, v, edge_data):
+        """Extract weight from edge data, handling MultiDiGraph"""
+        if isinstance(edge_data, dict):
+            # For MultiDiGraph, edge_data is a dict of {key: data}
+            # Get minimum weight across all parallel edges
+            min_weight = float('inf')
+            for key, data in edge_data.items():
+                weight = data.get('attr_dict', {}).get('weight', 1.0)
+                min_weight = min(min_weight, weight)
+            return min_weight if min_weight != float('inf') else 1.0
+        else:
+            # For regular DiGraph, edge_data is the data dict directly
+            return edge_data.get('attr_dict', {}).get('weight', 1.0)
     
-    # Calculate path weight manually since weights are in attr_dict
-    def calculate_path_weight(graph, path, weight_key='weight'):
-        """Calculate total weight of a path, handling MultiDiGraph with attr_dict"""
-        total_weight = 0.0
+    def weighted_shortest_path(graph, source, target):
+        """Find shortest weighted path using Dijkstra's algorithm"""
+        import heapq
+        
         is_multigraph = isinstance(graph, (nx.MultiDiGraph, nx.MultiGraph))
+        dist = {source: 0.0}
+        prev = {}
+        pq = [(0.0, source)]
+        visited = set()
         
-        for i in range(len(path) - 1):
-            u, v = path[i], path[i + 1]
+        while pq:
+            current_dist, u = heapq.heappop(pq)
+            
+            if u in visited:
+                continue
+            visited.add(u)
+            
+            if u == target:
+                break
+            
+            # Get neighbors
             if is_multigraph:
-                # For MultiDiGraph, get the minimum weight edge (or first if multiple)
-                edges = graph[u][v]
-                min_weight = float('inf')
-                for key, edge_data in edges.items():
-                    weight = edge_data.get('attr_dict', {}).get(weight_key, 1.0)
-                    min_weight = min(min_weight, weight)
-                total_weight += min_weight if min_weight != float('inf') else 1.0
+                neighbors = {}
+                for v, keys in graph[u].items():
+                    # Get minimum weight edge to this neighbor
+                    min_weight = float('inf')
+                    for key, edge_data in keys.items():
+                        weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
+                        min_weight = min(min_weight, weight)
+                    if min_weight != float('inf'):
+                        neighbors[v] = min_weight
             else:
-                # For regular DiGraph
-                edge_data = graph[u][v]
-                weight = edge_data.get('attr_dict', {}).get(weight_key, 1.0)
-                total_weight += weight
+                neighbors = {}
+                for v, edge_data in graph[u].items():
+                    weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
+                    neighbors[v] = weight
+            
+            # Update distances
+            for v, weight in neighbors.items():
+                alt = current_dist + weight
+                if v not in dist or alt < dist[v]:
+                    dist[v] = alt
+                    prev[v] = u
+                    heapq.heappush(pq, (alt, v))
         
-        return total_weight
+        # Reconstruct path
+        if target not in dist or dist[target] == float('inf'):
+            return None, float('inf')
+        
+        path = []
+        u = target
+        while u is not None:
+            path.insert(0, u)
+            u = prev.get(u)
+        
+        return path, dist[target]
     
-    path_weight = calculate_path_weight(pa.g, shortest_trajectory)
-    print('Shortest Trajectory Total Weight: ', path_weight)
+    labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
+    init_node = next(iter(pa.init))
+    shortest_trajectory = None
+    shortest_weight = float('inf')
+    
+    for f in iter(pa.final):
+        # Check if final node has valid proposition
+        if labels.get(f) and literal_eval(labels.get(f))[0] != '{}':
+            trajectory, weight = weighted_shortest_path(pa.g, init_node, f)
+            if trajectory and weight < shortest_weight:
+                shortest_trajectory = trajectory
+                shortest_weight = weight
+
+    if shortest_trajectory:
+        print('Shortest Weighted Trajectory: ', shortest_trajectory)
+        print('Shortest Trajectory Total Weight: ', shortest_weight)
     print('Shortest Trajectory Node Labels: ', [labels.get(node) for node in shortest_trajectory])
 
     # Visualize with the shortest path highlighted
