@@ -6,11 +6,46 @@ from lomap.classes.automata_updated import Fsa
 import csv
 import numpy as np
 import random
+import yaml
+from PIL import Image
 
 # Travel constant for A* cost calculation
 TRAVEL_CONSTANT = 1.0
 OBS_THRESHOLD = 80
-def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_expression, use_8_neighbors=True):
+
+def world_to_grid(x, y, origin, resolution):
+    """Convert world coordinates (meters) to grid indices.
+    
+    Args:
+        x: X coordinate in meters (world frame)
+        y: Y coordinate in meters (world frame)
+        origin: [x, y, theta] origin offset from YAML file
+        resolution: meters per pixel
+    
+    Returns:
+        [row, col]: Grid indices where rows are X-axis, columns are Y-axis
+    """
+    grid_row = int((x - origin[0]) / resolution)  # X maps to rows
+    grid_col = int((y - origin[1]) / resolution)  # Y maps to columns
+    return [grid_row, grid_col]
+
+def grid_to_world(row, col, origin, resolution):
+    """Convert grid indices to world coordinates (meters).
+    
+    Args:
+        row: Grid row index (represents X-axis)
+        col: Grid column index (represents Y-axis)
+        origin: [x, y, theta] origin offset from YAML file
+        resolution: meters per pixel
+    
+    Returns:
+        [x, y]: World coordinates in meters
+    """
+    x = row * resolution + origin[0]  # Rows represent X
+    y = col * resolution + origin[1]  # Columns represent Y
+    return [x, y]
+
+def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_expression, use_8_neighbors=True, origin=None, resolution=None):
     '''Return a path found by A* alogirhm w/ regards to an LTL statement
        and the number of steps it takes to find it.
 
@@ -37,6 +72,16 @@ def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_exp
     >>> astar_path
     [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1]]
     '''
+    # Convert world coordinates to grid indices if origin and resolution are provided
+    return_world_coords = False
+    if origin is not None and resolution is not None:
+        return_world_coords = True
+        start_grid = world_to_grid(start[0], start[1], origin, resolution)
+        goal_grid = world_to_grid(goal[0], goal[1], origin, resolution)
+    else:
+        start_grid = start
+        goal_grid = goal
+    
     # Merge occupancy grid obstacles into symbol grid
     # If occupancy grid cell > OBS_THRESHOLD, mark as obstacle (-1) in symbol grid
     for i in range(len(occupancy_grid)):
@@ -55,9 +100,9 @@ def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_exp
     max_dimension_row = len(symbol_grid) - 1
     max_dimension_col = len(symbol_grid[0]) - 1
 
-    if start == goal:
+    if start_grid == goal_grid:
         print("start the same as goal")
-        return (path, symbols_produced, steps)
+        return (path, symbols_produced, steps, None)
 
     # Get initial LTL state if expression is provided
     if LTL_expression:
@@ -66,18 +111,23 @@ def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_exp
     else:
         initial_ltl_state = None
     
-    start_node = (start, initial_ltl_state)
+    start_node = (start_grid, initial_ltl_state)
     
     queue.append(start_node)
     visited.append(start_node)
     
 
-    path, symbols_produced, steps, final_state = iterative_a_star(symbol_grid, queue, start, goal, parent_dict, visited, min_dimension, max_dimension_row, max_dimension_col,
+    path, symbols_produced, steps, final_state = iterative_a_star(symbol_grid, queue, start_grid, goal_grid, parent_dict, visited, min_dimension, max_dimension_row, max_dimension_col,
                                      steps, weights, LTL_expression, use_8_neighbors)
     if path != []:
         print(f"It takes {steps} steps to find a path using A*")
         path.reverse()
         symbols_produced.reverse()
+        
+        # Convert path back to world coordinates if needed
+        if return_world_coords:
+            path = [grid_to_world(pos[0], pos[1], origin, resolution) for pos in path]
+        
         return (path, symbols_produced, steps, final_state)
 
     else:
@@ -248,7 +298,7 @@ def four_connected_with_gx_check_state_restraint(node, visited, min_dimension, m
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
-        elif gx < gx_dict[str(node_to_add)]:
+        elif str(node_to_add) in gx_dict and gx < gx_dict[str(node_to_add)]:
             # Found a better path to this node
             parent_dict[str(node_to_add)] = node
             gx_dict[str(node_to_add)] = gx
@@ -312,8 +362,8 @@ def eight_connected_with_gx_check_state_restraint(node, visited, min_dimension, 
         # Build the set of propositions for this cell
         cell_props = set()
         if cell_value not in [-1, 0] and cell_value != {}:
+                
                 cell_props.add(cell_value)
-        
         # Determine the next LTL state
         next_ltl_state = current_ltl_state
         # See if moving to cell would change the state of the LTL expression
@@ -322,7 +372,6 @@ def eight_connected_with_gx_check_state_restraint(node, visited, min_dimension, 
             if next_ltl_state is None:
                 # Moving to this cell would violate the LTL expression
                 continue
-        
         # Create node with position and LTL state
         new_pos = [new_row, new_col]
         node_to_add = (new_pos, next_ltl_state)
@@ -345,7 +394,7 @@ def eight_connected_with_gx_check_state_restraint(node, visited, min_dimension, 
             parent_dict[str(node_to_add)] = node
             queue.append(node_to_add)
             gx_dict[str(node_to_add)] = gx
-        elif gx < gx_dict[str(node_to_add)]:
+        elif str(node_to_add) in gx_dict and gx < gx_dict[str(node_to_add)]:
             # Found a better path to this node
             parent_dict[str(node_to_add)] = node
             gx_dict[str(node_to_add)] = gx
@@ -353,8 +402,19 @@ def eight_connected_with_gx_check_state_restraint(node, visited, min_dimension, 
     return queue, parent_dict, gx_dict
 
 #from A* path, reconstruct the LTL state trace and path
-def reconstruct_state_trace(path, grid, LTL_expression):
-    """Reconstruct the LTL state trace from a path through the grid."""
+def reconstruct_state_trace(path, grid, LTL_expression, origin=None, resolution=None):
+    """Reconstruct the LTL state trace from a path through the grid.
+    
+    Args:
+        path: List of positions. Can be grid indices [row, col] or world coords [x, y]
+        grid: Symbol grid
+        LTL_expression: LTL automaton
+        origin: Optional [x, y, theta] for converting world coords to grid indices
+        resolution: Optional meters per pixel for converting world coords to grid indices
+    
+    Returns:
+        List of (position, ltl_state, cell_value) tuples
+    """
     state_trace = []
     if not path:
         return state_trace
@@ -362,7 +422,16 @@ def reconstruct_state_trace(path, grid, LTL_expression):
     current_ltl_state = next(iter(LTL_expression.init.keys())) if LTL_expression else None
     
     for pos in path:
-        cell_value = grid[pos[0]][pos[1]]
+        # Convert world coordinates to grid indices if needed
+        if origin is not None and resolution is not None:
+            # pos is in world coordinates [x, y], convert to grid indices
+            grid_pos = world_to_grid(pos[0], pos[1], origin, resolution)
+            row, col = grid_pos[0], grid_pos[1]
+        else:
+            # pos is already in grid indices [row, col]
+            row, col = int(pos[0]), int(pos[1])
+        
+        cell_value = grid[row][col]
         
         cell_props = set()
         if cell_value not in [-1, 0, '', '{}']:
@@ -370,6 +439,7 @@ def reconstruct_state_trace(path, grid, LTL_expression):
         
         if LTL_expression:
             next_state = LTL_expression.next_state(current_ltl_state, cell_props)
+            
             if next_state is not None:
                 current_ltl_state = next_state
         
@@ -434,55 +504,77 @@ def create_map(percent_empty_open, props):
     return grid.astype(int), start, goal
 
 
-def load_maps(og_file_path, sym_file_path, weight_file_path=None):
-    """Load occupancy grid, symbol grid, and optional weights from CSV files.
-    
-    All files must be in grid format with comma-separated values.
+def load_maps(map_yaml_path, sym_file_path, weight_file_path=None):
+    """Load occupancy grid from ROS map files (.yaml + .pgm), symbol grid from CSV, and optional weights.
     
     Args:
-        og_file_path: Path to occupancy grid CSV file (grid format: comma-separated integers)
+        map_yaml_path: Path to ROS map .yaml file (contains metadata and references .pgm image)
         sym_file_path: Path to symbol grid CSV file (grid format: comma-separated strings)
         weight_file_path: Optional path to weights CSV file (grid format: comma-separated floats)
         
     Returns:
-        occupancy_grid: 2D list of integers (occupancy values)
+        occupancy_grid: 2D list of integers (occupancy values: 0=free, 100=occupied)
         symbol_grid: 2D list of strings (symbol values preserved as-is)
         weights: Dictionary mapping (row,col) tuples to weight values
+        origin: [x, y, theta] offset from map metadata
+        resolution: meters per pixel
         
     Raises:
         FileNotFoundError: If any required file doesn't exist
         ValueError: If grids have mismatched dimensions
     """
-    # Validate file paths exist
-    if not os.path.exists(og_file_path):
-        raise FileNotFoundError(f"Occupancy grid file not found: {og_file_path}")
+    # Validate yaml file exists
+    if not os.path.exists(map_yaml_path):
+        raise FileNotFoundError(f"Map YAML file not found: {map_yaml_path}")
     if not os.path.exists(sym_file_path):
         raise FileNotFoundError(f"Symbol grid file not found: {sym_file_path}")
     if weight_file_path and not os.path.exists(weight_file_path):
         raise FileNotFoundError(f"Weight file not found: {weight_file_path}")
     
+    # Load map metadata from YAML
+    with open(map_yaml_path, 'r') as yaml_file:
+        map_data = yaml.safe_load(yaml_file)
+    
+    # Extract parameters
+    image_filename = map_data['image']
+    resolution = map_data['resolution']
+    origin = map_data['origin']  # [x, y, theta]
+    occupied_thresh = map_data.get('occupied_thresh', 0.65)
+    
+    # Load PGM image
+    map_dir = os.path.dirname(map_yaml_path)
+    pgm_path = os.path.join(map_dir, image_filename)
+    
+    if not os.path.exists(pgm_path):
+        raise FileNotFoundError(f"PGM image file not found: {pgm_path}")
+    
+    # Load image and convert to numpy array
+    img = Image.open(pgm_path)
+    img_array = np.array(img)
+    
+    # Convert image to occupancy grid
+    # White pixels (254,254,254 or high values) = free space (0)
+    # Other pixels = occupied (100)
     occupancy_grid = []
-    symbol_grid = []    
-    weights = dict()
-
-    # Load occupancy grid
-    with open(og_file_path, 'r') as og_file:
-        reader = csv.reader(og_file)
-        for row in reader:
-            # Parse grid values
-            parsed_row = []
-            for col in row:
-                if col == '' or col.strip() == '':
-                    parsed_row.append(0)
-                else:
-                    try:
-                        parsed_row.append(int(col))
-                    except ValueError:
-                        parsed_row.append(0)
-            if parsed_row:  # Only add non-empty rows
-                occupancy_grid.append(parsed_row)
+    
+    if len(img_array.shape) == 3:  # RGB image
+        # Convert to grayscale if needed
+        img_gray = np.mean(img_array, axis=2)
+    else:  # Already grayscale
+        img_gray = img_array
+    
+    # Threshold: white pixels (>250) = free (0), others = occupied (100)
+    for row in img_gray:
+        og_row = []
+        for pixel in row:
+            if pixel > 250:  # White = free space
+                og_row.append(0)
+            else:  # Non-white = occupied
+                og_row.append(100)
+        occupancy_grid.append(og_row)
     
     # Load symbol grid - preserve values as-is from file
+    symbol_grid = []
     with open(sym_file_path, 'r') as sym_file:
         reader = csv.reader(sym_file)
         for row in reader:
@@ -492,7 +584,9 @@ def load_maps(og_file_path, sym_file_path, weight_file_path=None):
                 # Keep empty cells as empty strings, everything else as-is
                 parsed_row.append(col)
             if parsed_row:  # Only add non-empty rows
-                symbol_grid.append(parsed_row)    # Validate that grids have the same dimensions
+                symbol_grid.append(parsed_row)
+    
+    # Validate that grids have the same dimensions
     if len(occupancy_grid) != len(symbol_grid):
         raise ValueError(
             f"Grid dimension mismatch: occupancy grid has {len(occupancy_grid)} rows, "
@@ -523,8 +617,9 @@ def load_maps(og_file_path, sym_file_path, weight_file_path=None):
                     f"Inconsistent row width in symbol grid at row {i}: "
                     f"expected {sym_cols}, got {len(row)}"
                 )
-
+    
     # Load weights if provided - always in grid format (comma-separated)
+    weights = dict()
     if weight_file_path:
         with open(weight_file_path, 'r') as weight_file:
             reader = csv.reader(weight_file)
@@ -540,13 +635,16 @@ def load_maps(og_file_path, sym_file_path, weight_file_path=None):
                         weights[(row_idx, col_idx)] = 0.0
                 row_idx += 1
     
-    print(f"Loaded grids: {len(occupancy_grid)}x{len(occupancy_grid[0]) if occupancy_grid else 0}")
+    print(f"Loaded map from {map_yaml_path}")
+    print(f"  Grid dimensions: {len(occupancy_grid)}x{len(occupancy_grid[0]) if occupancy_grid else 0}")
+    print(f"  Resolution: {resolution} m/pixel")
+    print(f"  Origin: {origin}")
     
-    return occupancy_grid, symbol_grid, weights
+    return occupancy_grid, symbol_grid, weights, origin, resolution
 
 if __name__ == "__main__":
-    # Load the map
-    occupancy_file = 'maps/og/random_occupancy_grid.csv'
+    # Load the map from ROS map format
+    map_yaml_file = '/home/hello-robot/reliable_robot_llms/maps/uh2.yaml'
     symbol_file = 'maps/symbols/symbol.csv'
     weight_file = 'maps/weights/weights.csv'
     
@@ -555,7 +653,9 @@ if __name__ == "__main__":
     goal = [7, 7]
     
     try:
-        occupancy_grid, symbol_grid, weights = load_maps(occupancy_file, symbol_file, weight_file)
+        occupancy_grid, symbol_grid, weights, origin, resolution = load_maps(map_yaml_file, symbol_file, weight_file)
+        print(f"Map origin offset: {origin}")
+        print(f"Map resolution: {resolution} m/pixel")
     except (FileNotFoundError, ValueError) as e:
         print(f"Error loading maps: {e}")
         exit(1)
