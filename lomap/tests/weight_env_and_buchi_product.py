@@ -4,9 +4,10 @@
 # What to do when long objects like cables extend across the floor 
 
 import json
+import subprocess
+import os
 from ast import literal_eval
 from lomap.tests.create_env_and_buchi_product import create_product
-from transformers import AutoTokenizer, CLIPTextModel
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -395,7 +396,80 @@ def get_shortest_path(pa, weight_attr='weight'):
     return shortest_path
 
     
+def embed_labels_via_subprocess(dict_data, model_name="openai/clip-vit-base-patch32", clipenv_python=None):
+    """
+    Embed labels using CLIP via subprocess call to clipenv environment.
+    
+    Args:
+        dict_data: Dictionary with labels to embed
+        model_name: CLIP model name to use
+        clipenv_python: Path to Python executable in clipenv (auto-detected if None)
+    
+    Returns:
+        Dictionary with embeddings added (as torch tensors)
+    """
+    # Find clipenv Python if not provided
+    if clipenv_python is None:
+        # Try common conda environment paths
+        conda_base = os.environ.get('CONDA_PREFIX', '')
+        if conda_base:
+            # We're in a conda environment, try to find clipenv
+            conda_envs = os.path.join(os.path.dirname(os.path.dirname(conda_base)), 'envs')
+            clipenv_python = os.path.join(conda_envs, 'clipenv', 'bin', 'python')
+        else:
+            # Try anaconda/miniconda default locations
+            home = os.path.expanduser('~')
+            for base in [os.path.join(home, 'anaconda3'), os.path.join(home, 'miniconda3')]:
+                clipenv_python = os.path.join(base, 'envs', 'clipenv', 'bin', 'python')
+                if os.path.exists(clipenv_python):
+                    break
+        
+        # If still not found, try using 'python' and hope clipenv is activated
+        if not clipenv_python or not os.path.exists(clipenv_python):
+            clipenv_python = 'python'
+    
+    # Get path to clip_embedder.py script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    embedder_script = os.path.join(script_dir, 'clip_embedder.py')
+    
+    # Prepare input: remove any existing embeddings and convert to JSON-serializable format
+    input_dict = {}
+    for label, data in dict_data.items():
+        input_dict[label] = {k: v for k, v in data.items() if k != 'embedding'}
+    
+    # Call the embedder script
+    try:
+        result = subprocess.run(
+            [clipenv_python, embedder_script, model_name],
+            input=json.dumps(input_dict),
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Parse output
+        output_dict = json.loads(result.stdout)
+        
+        # Convert numpy arrays back to torch tensors
+        for label in output_dict.keys():
+            if 'embedding' in output_dict[label]:
+                embedding_list = output_dict[label]['embedding']
+                output_dict[label]['embedding'] = torch.tensor(embedding_list)
+        
+        return output_dict
+        
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr if e.stderr else "Unknown error"
+        raise RuntimeError(f"CLIP embedding failed: {error_msg}")
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Failed to parse CLIP embedder output: {e}")
+
 def embed_labels(dict, model, tokenizer):
+    """
+    Original embed_labels function (kept for backward compatibility if needed).
+    Note: This requires transformers which may not be available in Python 3.7.
+    Use embed_labels_via_subprocess instead.
+    """
     with torch.no_grad():
             for label in dict.keys():
                 # Skip empty labels and the empty set representation
@@ -540,9 +614,19 @@ def weight_edges(pa, similarity_dict, risk_dict):
                 print(f"No similarity found for prop '{prop_string}'")
     return pa
 
-def main():
+def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=True): #TODO: Clean this up to look like a method and not main
     # Get sample paranoia data 
-    with open('paranoia.json', 'r') as file:
+    if json_file_path is None:
+        # Try to find paranoia.json relative to this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        json_file_path = os.path.join(script_dir, 'paranoia.json')
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"paranoia.json not found. Please provide json_file_path or place paranoia.json in {script_dir}")
+    
+    if not os.path.exists(json_file_path):
+        raise FileNotFoundError(f"JSON file not found: {json_file_path}")
+    
+    with open(json_file_path, 'r') as file:
         data = json.load(file)
 
     # Put objects in dictionary with associated risk value
@@ -559,22 +643,34 @@ def main():
 
     # Define example specification and calculate product automaton
     # TODO: Change map to match paranoia output 
-    spec = '(F coffee)'
-    shortest_word, pa = create_product('maps/unit_test_maps/alphabetical_maps/example9 copy.csv', '{}', spec, display=False)
+    spec = ltl_spec
+    shortest_word, pa = create_product(map_path, '{}', spec, display=False)
 
     # Now organize the labels in a dict so we can encode them and get their relationship
     pa_dict = parse_abbrev_label(pa)
     #print(pa_dict)
 
     # # Use CLIP to embed the product labels and paranoia output 
-    model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32") # TODO: Change pre-trained model if there's a better fit 
-    tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    # Use subprocess to call CLIP in clipenv (Python 3.9+) environment
+    # This allows us to use transformers while keeping lomapenv (Python 3.7)
+    try:
+        pa_dict = embed_labels_via_subprocess(pa_dict, model_name="openai/clip-vit-base-patch32")
+        #print(pa_dict)
 
-    pa_dict = embed_labels(pa_dict, model, tokenizer)
-    #print(pa_dict)
-
-    risk_dict = embed_labels(risk_dict, model, tokenizer)
-    #print(risk_dict)
+        risk_dict = embed_labels_via_subprocess(risk_dict, model_name="openai/clip-vit-base-patch32")
+        #print(risk_dict)
+    except RuntimeError as e:
+        print(f"Warning: CLIP embedding failed: {e}")
+        print("Falling back to original embed_labels (requires transformers in current environment)")
+        # Fallback to original method if subprocess fails
+        try:
+            from transformers import AutoTokenizer, CLIPTextModel
+            model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
+            tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+            pa_dict = embed_labels(pa_dict, model, tokenizer)
+            risk_dict = embed_labels(risk_dict, model, tokenizer)
+        except ImportError:
+            raise RuntimeError("CLIP embedding unavailable: transformers not installed and clipenv not found")
 
 
     # Calculate cosine similarity between the two embeddings
@@ -705,9 +801,7 @@ def main():
     print('Shortest Trajectory Node Labels: ', [labels.get(node) for node in shortest_trajectory])
 
     # Visualize with the shortest path highlighted
-    fig, ax = visualize_weighted_graph(pa, highlight_path=shortest_trajectory)
-    plt.show()
-
-
-if __name__ == '__main__':
-    main()
+    if visualize:
+        fig, ax = visualize_weighted_graph(pa, highlight_path=shortest_trajectory)
+        plt.show()
+    return pa, shortest_trajectory, shortest_weight
