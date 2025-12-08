@@ -9,11 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, FancyArrowPatch
 import matplotlib.patches as mpatches
+import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from lomap.classes.automata_updated import Fsa
-from lomap.tests.a_star_state_aware import state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
+from lomap.tests.a_star_state_aware import grid_to_world, state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
 
 
 def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, symbol_positions, 
@@ -227,17 +228,21 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
 
 if __name__ == '__main__':
     # Load maps
-    occupancy_grid, symbol_grid, weights = load_maps(
-        'maps/og/random_occupancy_grid.csv',
-        'maps/symbols/symbol.csv',
-        'maps/weights/weights.csv'
+    occupancy_grid, symbol_grid, weights, origin, resolution = load_maps(
+        '/home/hello-robot/reliable_robot_llms/maps/uh2.yaml',
+        '/home/hello-robot/reliable_robot_llms/maps/uh2_labels.csv',
+        '/home/hello-robot/reliable_robot_llms/maps/uh2_weights.csv'
     )
     
-    start = [0, 0]
-    goal = [7, 7]
+    # Start and goal positions that require navigating around a/b regions
+    # a: rows 180-217, cols 140-219
+    # b: rows 213-243, cols 187-222
+    start = grid_to_world(170, 170, origin, resolution)  # Before the regions
+    
+    goal = grid_to_world(230, 210, origin, resolution)  # Past the regions
     
     # Create LTL expression (set to None for no constraints)
-    ltl_formula = "(!d U c) && (!c U b) && (!b U a) && G !e"
+    ltl_formula = "(G !a) && (G !b )"
     ltl_expression = Fsa()
     ltl_expression.from_formula(ltl_formula)
     
@@ -246,24 +251,34 @@ if __name__ == '__main__':
     
     # Run A* planner
     path, symbols_produced, steps, final_state = state_aware_astar(
-        start, goal, grid, occupancy_grid, weights, ltl_expression
+        start, goal, grid, occupancy_grid, weights, ltl_expression, origin=origin, resolution=resolution, use_8_neighbors=True
     )
     
     if path:
-        # Reconstruct state trace
-        state_trace = reconstruct_state_trace(path, grid, ltl_expression)
+        # Reconstruct state trace (path is in world coordinates, need to pass origin/resolution)
+        state_trace = reconstruct_state_trace(path, grid, ltl_expression, origin=origin, resolution=resolution)
         
-        # Create symbol positions dictionary
-        unique_symbols = set(cell for row in symbol_grid for cell in row 
-                            if cell not in [-1, 0, '', '{}'])
-        symbol_positions = {symbol: [[i, j] for i, row in enumerate(symbol_grid) 
-                                     for j, cell in enumerate(row) if cell == symbol]
-                           for symbol in unique_symbols}
+        # Save path data to JSON file for web visualization
+        path_data = {
+            'path': path,  # World coordinates
+            'symbols_produced': symbols_produced,
+            'steps': steps,
+            'final_state': str(final_state),
+            'state_trace': [(list(pos), str(state), str(symbol)) for pos, state, symbol in state_trace],
+            'start': start,
+            'goal': goal,
+            'ltl_formula': ltl_formula,
+            'origin': origin,
+            'resolution': resolution,
+            'grid_dimensions': [len(occupancy_grid), len(occupancy_grid[0])]
+        }
         
-        # Visualize
-        visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
-                                symbol_positions, occupancy_grid, weights, 
-                                'ltl_path_visualization.png')
+        output_file = 'path_output.json'
+        with open(output_file, 'w') as f:
+            json.dump(path_data, f, indent=2)
+        
         print(f"✓ Path found with {len(path)} positions in {steps} steps")
+        print(f"✓ Path data saved to {output_file}")
+        print(f"  Use the occupancy grid labeler HTML to visualize this path")
     else:
         print("✗ No path found")
