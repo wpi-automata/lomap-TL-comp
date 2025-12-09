@@ -7,7 +7,7 @@ def create_product(map_path, start_state, spec, prune=False, display=True):
 
     #TODO: need to be explicit about where start. If 2 a's, there needs to be a way at this step to differentiate. For now, will just pick symbol.0.
 
-    ts, ts_props = create_ts(map_path, start_state, prune, display)
+    ts, ts_props, clusters = create_ts(map_path, start_state, prune, display)
 
     buchi = Buchi()
     buchi.from_formula(spec)
@@ -87,7 +87,7 @@ def create_product(map_path, start_state, spec, prune=False, display=True):
 
     print('Accepted word:', shortest_word)
 
-    return shortest_word, pa
+    return shortest_word, pa, clusters
     
 if __name__ == '__main__':
 

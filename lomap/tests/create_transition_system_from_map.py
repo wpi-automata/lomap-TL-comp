@@ -1,4 +1,5 @@
 import os
+from tkinter import FALSE
 from lomap.tests.a_star import *
 from lomap.tests.create_graph_from_map import *
 import networkx as nx
@@ -15,23 +16,28 @@ EMPTY_SYMBOL='{}'
 WALL_SYMBOL = '#'
 
 # Load map, start and goal point.
-def load_symbol_map(file_path):
+def load_symbol_map(file_path, return_start_goal=True):
     grid = []
-    start = [0, 0]
-    goal = [0, 0]
+   
+    if return_start_goal:
+        start = [0, 0]
+        goal = [0, 0]
+    else:
+        start = None
+        goal = None
     # Load from the file
     with open(file_path, 'r') as map_file:
         wut = os.getcwd()
         reader = csv.reader(map_file)
         for i, row in enumerate(reader):
             # load start and goal point
-            if i == 0:
+            if return_start_goal and i == 0:
                 start[0] = int(row[1])
                 start[1] = int(row[2])
-            elif i == 1:
+            elif return_start_goal and i == 1:
                 goal[0] = int(row[1])
                 goal[1] = int(row[2])
-            # load the map
+                # load the map
             else:
                 parsed_row = [col for col in row]
                 grid.append(parsed_row)
@@ -305,7 +311,7 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
 
     print(f"pruning: {prune}")
     
-    symbol_grid, start, goal = load_symbol_map(map_path)
+    symbol_grid, start, goal = load_symbol_map(map_path, return_start_goal=FALSE)
     props = assign_props(symbol_grid)
     grid = create_numerical_grid(props, symbol_grid)
 
@@ -348,7 +354,7 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     if display:
         draw_graph(G, label_mapping)
 
-    return ts, props
+    return ts, props, unique_clusters
 
 class TestTSCreation(unittest.TestCase):
 

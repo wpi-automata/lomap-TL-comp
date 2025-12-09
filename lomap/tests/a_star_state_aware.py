@@ -642,15 +642,47 @@ def load_maps(map_yaml_path, sym_file_path, weight_file_path=None):
     
     return occupancy_grid, symbol_grid, weights, origin, resolution
 
+def visualize_astar_result(occupancy_grid, symbol_grid, weights, path, start, goal, 
+                           title="A* Path Result", save_path=None):
+    """
+    Convenience function to visualize A* search results.
+    
+    Args:
+        occupancy_grid: 2D list/array of occupancy values
+        symbol_grid: 2D list/array of symbol labels
+        weights: Dictionary or 2D array of weights
+        path: List of [row, col] coordinates from A* search
+        start: [row, col] start position
+        goal: [row, col] goal position
+        title: Title for the plot
+        save_path: Optional path to save the figure
+    """
+    try:
+        from lomap.tests.visualize_path import visualize_path
+        visualize_path(
+            occupancy_grid=occupancy_grid,
+            symbol_grid=symbol_grid,
+            weights=weights,
+            path=path,
+            start=start,
+            goal=goal,
+            title=title,
+            save_path=save_path,
+            show_labels=True,
+            show_weights=True
+        )
+    except ImportError:
+        print("Warning: visualize_path module not available. Install matplotlib to enable visualization.")
+
 if __name__ == "__main__":
     # Load the map from ROS map format
-    map_yaml_file = '/home/hello-robot/reliable_robot_llms/maps/uh2.yaml'
-    symbol_file = 'maps/symbols/symbol.csv'
-    weight_file = 'maps/weights/weights.csv'
+    map_yaml_file = '/home/colette/MQP/reliable_robot_llms/maps/nav2_local_map.yaml'
+    symbol_file = '/home/colette/MQP/reliable_robot_llms/maps/nav2_local_map_labels.csv'
+    weight_file = '/home/colette/MQP/reliable_robot_llms/maps/nav2_local_map_weights.csv'
     
     # Define start and goal
-    start = [0, 0]
-    goal = [7, 7]
+    start = [25, 25]
+    goal = [50, 50]
     
     try:
         occupancy_grid, symbol_grid, weights, origin, resolution = load_maps(map_yaml_file, symbol_file, weight_file)

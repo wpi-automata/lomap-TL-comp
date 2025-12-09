@@ -7,7 +7,7 @@
         "death": "none",
         "objects": [
             "robot",
-            "welding machine"
+            "bomb lab"
         ],
         "danger_score": 2.4000000000000004
     },
@@ -19,7 +19,7 @@
         "death": "none",
         "objects": [
             "robot",
-            "cafe",
+            "kitchen",
             "game console"
         ],
         "danger_score": 1.5

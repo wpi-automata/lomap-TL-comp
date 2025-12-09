@@ -561,6 +561,7 @@ def extract_prop_from_label(label_string):
 def weight_edges(pa, similarity_dict, risk_dict):
     import networkx as nx
     is_multigraph = isinstance(pa.g, (nx.MultiDiGraph, nx.MultiGraph))
+    label_weights = {}
     
     if is_multigraph:
         # Handle MultiDiGraph - edges have keys: (u, v, key)
@@ -585,6 +586,7 @@ def weight_edges(pa, similarity_dict, risk_dict):
                 # Now we need to update the weight of the edge
                 pa.g[u][v][key]['attr_dict']['weight'] = risk_label
                 print(f"Updated weight to: {pa.g[u][v][key]['attr_dict'].get('weight', 'N/A')}")
+                label_weights[prop_string] = risk_label
             else:
                 print(f"No similarity found for prop '{prop_string}'")
     else:
@@ -610,11 +612,12 @@ def weight_edges(pa, similarity_dict, risk_dict):
                 # Now we need to update the weight of the edge
                 pa.g[u][v][key]['attr_dict']['weight'] = risk_label
                 print(f"Updated weight to: {pa.g[u][v][key]['attr_dict'].get('weight', 'N/A')}")
+                label_weights[prop_string] = risk_label
             else:
                 print(f"No similarity found for prop '{prop_string}'")
-    return pa
+    return pa, label_weights
 
-def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=True): #TODO: Clean this up to look like a method and not main
+def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state, visualize=True): #TODO: Clean this up to look like a method and not main
     # Get sample paranoia data 
     if json_file_path is None:
         # Try to find paranoia.json relative to this script
@@ -644,7 +647,25 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
     # Define example specification and calculate product automaton
     # TODO: Change map to match paranoia output 
     spec = ltl_spec
-    shortest_word, pa = create_product(map_path, '{}', spec, display=False)
+    result = create_product(map_path, start_state, spec, display=False)
+    
+    # Check if create_product returned None (no trajectory found)
+    if result is None:
+        print(f"\n{'='*60}")
+        print(f"ERROR: No trajectory found for LTL spec '{ltl_spec}' on map '{map_path}'")
+        print(f"{'='*60}")
+        print("Possible causes:")
+        print("  1. The map doesn't contain the required symbols (e.g., 'coffee')")
+        print("  2. The LTL formula is unsatisfiable with the given map")
+        print("  3. The product automaton has no accepting states")
+        print("\nTo debug:")
+        print("  - Check what symbols are in the map file")
+        print("  - Verify the LTL formula syntax is correct")
+        print("  - Ensure the map contains symbols referenced in the LTL formula")
+        print(f"{'='*60}\n")
+        return None, None, None
+    
+    shortest_word, pa, clusters = result
 
     # Now organize the labels in a dict so we can encode them and get their relationship
     pa_dict = parse_abbrev_label(pa)
@@ -657,8 +678,8 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
         pa_dict = embed_labels_via_subprocess(pa_dict, model_name="openai/clip-vit-base-patch32")
         #print(pa_dict)
 
-        risk_dict = embed_labels_via_subprocess(risk_dict, model_name="openai/clip-vit-base-patch32")
-        #print(risk_dict)
+        risk_dict_embeddings = embed_labels_via_subprocess(risk_dict, model_name="openai/clip-vit-base-patch32")
+        print("Risk dict embeddings: ", risk_dict_embeddings)
     except RuntimeError as e:
         print(f"Warning: CLIP embedding failed: {e}")
         print("Falling back to original embed_labels (requires transformers in current environment)")
@@ -668,7 +689,7 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
             model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
             tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
             pa_dict = embed_labels(pa_dict, model, tokenizer)
-            risk_dict = embed_labels(risk_dict, model, tokenizer)
+            risk_dict_embeddings = embed_labels(risk_dict, model, tokenizer)
         except ImportError:
             raise RuntimeError("CLIP embedding unavailable: transformers not installed and clipenv not found")
 
@@ -680,7 +701,7 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
         # Skip if no embedding was created (e.g., empty label)
         if 'embedding' not in pa_data:
             continue
-        for risk_label, risk_data in risk_dict.items():
+        for risk_label, risk_data in risk_dict_embeddings.items():
             # Skip if no embedding was created
             if 'embedding' not in risk_data:
                 continue
@@ -699,7 +720,7 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
 
     # Weight the edges of the product automaton based on the cosine similarity
     # Return the weighted product automaton
-    pa = weight_edges(pa, similarity_dict, risk_dict)
+    pa, label_weights = weight_edges(pa, similarity_dict, risk_dict_embeddings)
     
     # Extract edge weights for visualization
     # At the end of your main() function, replace the visualization with:
@@ -783,6 +804,7 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
         return path, dist[target]
     
     labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
+    print("Labels: ", labels)
     init_node = next(iter(pa.init))
     shortest_trajectory = None
     shortest_weight = float('inf')
@@ -800,8 +822,15 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, visualize=T
         print('Shortest Trajectory Total Weight: ', shortest_weight)
     print('Shortest Trajectory Node Labels: ', [labels.get(node) for node in shortest_trajectory])
 
+    # Use the unique clusters to get the node cooridinates
+    path_clusters = [clusters[node[0]] for node in shortest_trajectory]
+    # Calculate the center of the path clusters
+    path_centers = [[int(x) for x in np.mean(cluster, axis=0)] for cluster in path_clusters]
+    path_centers.pop(0) # Remove the initial state
+    print('Path Centers: ', path_centers)
+
     # Visualize with the shortest path highlighted
     if visualize:
         fig, ax = visualize_weighted_graph(pa, highlight_path=shortest_trajectory)
         plt.show()
-    return pa, shortest_trajectory, shortest_weight
+    return pa, shortest_trajectory, shortest_weight, path_centers, label_weights
