@@ -45,7 +45,7 @@ def grid_to_world(row, col, origin, resolution):
     y = col * resolution + origin[1]  # Columns represent Y
     return [x, y]
 
-def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_expression, use_8_neighbors=True, origin=None, resolution=None):
+def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_expression, use_8_neighbors=True, origin=None, resolution=None, start_coords_world=False, return_world_coords=True):
     '''Return a path found by A* alogirhm w/ regards to an LTL statement
        and the number of steps it takes to find it.
 
@@ -72,13 +72,13 @@ def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_exp
     >>> astar_path
     [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1]]
     '''
-    # Convert world coordinates to grid indices if origin and resolution are provided
-    return_world_coords = False
+    # Convert world coordinates to grid indices if origin and resolution are provided and start_coords_world is True
     if origin is not None and resolution is not None:
-        return_world_coords = True
-        start_grid = world_to_grid(start[0], start[1], origin, resolution)
-        goal_grid = world_to_grid(goal[0], goal[1], origin, resolution)
+        if start_coords_world:
+            start_grid = world_to_grid(start[0], start[1], origin, resolution)
+            goal_grid = world_to_grid(goal[0], goal[1], origin, resolution)
     else:
+        return_world_coords = False
         start_grid = start
         goal_grid = goal
     
