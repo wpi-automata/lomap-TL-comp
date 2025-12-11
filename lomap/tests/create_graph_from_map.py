@@ -1,10 +1,11 @@
+import time
 from lomap.tests.a_star import *
 import numpy as np
 import math
 import unittest
 import networkx as nx
 
-def create_graph(clusters):
+def create_graph(clusters, dim):
     edges = list()
     keys = list(clusters.keys())
 
@@ -15,10 +16,49 @@ def create_graph(clusters):
             comparison_key = keys[j]
             comparison_cluster = clusters.get(comparison_key)
             
-            if cluster_connected(cluster, comparison_cluster):
+            if cluster_connected_quickly(clusters, key, comparison_key, dim):
                 edges.append([key, comparison_key])
     
     return edges
+
+def get_edges_from_clusters(cluster_points, dim):
+    """
+    Get the boundary points of a cluster without using nested loops.
+    """
+    cluster_set = set(map(tuple, cluster_points))  # Convert points to a set for O(1) lookups
+    boundary_points = set()
+
+    for row, col in cluster_points:
+        # Check the 4 neighbors (up, down, left, right)
+        neighbors = [
+            (row - 1, col),  # Up
+            (row + 1, col),  # Down
+            (row, col - 1),  # Left
+            (row, col + 1)   # Right
+        ]
+
+        # If any neighbor is not in the cluster set, it's a boundary point
+        for neighbor in neighbors:
+            if neighbor not in cluster_set:
+                boundary_points.add((row, col))
+                break  # Once we know it's a boundary, no need to check other neighbors
+
+    return list(boundary_points)
+    
+def cluster_connected_quickly(clusters, key, comparison_key, dim):
+    """
+    Check if two clusters are connected by their boundary points.
+    """
+    # Get the boundary points of both clusters
+    boundary1 = get_edges_from_clusters(clusters[key], dim)
+    boundary2 = get_edges_from_clusters(clusters[comparison_key], dim)
+    
+    # Check if any boundary point from cluster1 is adjacent to a boundary point from cluster2
+    for point1 in boundary1:
+        for point2 in boundary2:
+            if connected(point1, point2):  # Assuming `connected` checks adjacency
+                return True
+    return False
                     
 
 def cluster_connected(cluster, comparison_cluster):
@@ -51,6 +91,7 @@ def create_clusters(grid):
     return clusters
 
 def cluster(r, c, val, clusters):
+    start_time = time.time()
     first_in_list = [[r,c]]
     if str(val) in clusters.keys():
         val_clusters = clusters.get(str(val))

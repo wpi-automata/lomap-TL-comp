@@ -10,6 +10,8 @@ import string
 from collections import Counter
 from lomap.tests.test_map_word_accepted_randomized_occupancy_grid import *
 from lomap.classes import Buchi, Ts
+import numpy as np
+from scipy.ndimage import label
 
 EMPTY_SYMBOL_NUMERIC='0'
 EMPTY_SYMBOL='{}'
@@ -53,16 +55,17 @@ def assign_props(grid):
     single_chars=[x for x in reduced if (len(x)==1 and x!=EMPTY_SYMBOL_NUMERIC and x!=WALL_SYMBOL)]
     multi_chars=[x for x in reduced if (len(x)>1 and x!=EMPTY_SYMBOL_NUMERIC and x!=WALL_SYMBOL)]
     
-    for mc in multi_chars:
-        for char in mc:
-            if char not in single_chars:
-                single_chars.append(char)
+    # for mc in multi_chars:
+    #     for char in mc:
+    #         if char not in single_chars:
+    #             single_chars.append(char)
 
     props[EMPTY_SYMBOL] = int(EMPTY_SYMBOL_NUMERIC)
 
     single_chars = sorted(single_chars)
+    chars = single_chars + multi_chars
 
-    char_to_prop(single_chars, props)
+    char_to_prop(chars, props)
 
     return props
 
@@ -304,6 +307,53 @@ def clean_clusters(clusters):
     if WALL_SYMBOL in clusters.keys():
         del clusters[WALL_SYMBOL]
 
+def cluster_quickly(grid, props):
+    # Ensure grid is 2D
+    if grid.ndim != 2:
+        raise ValueError(f"Grid must be 2D, but got shape {grid.shape}")
+
+    # Define connectivity (4 or 8 connectivity)
+    # 4-connectivity means connecting cells in horizontal/vertical directions only
+    # 8-connectivity means connecting cells in all directions (diagonal too)
+    connectivity = 2  # Use 1 for 4-connectivity, 2 for 8-connectivity
+
+    # Initialize an empty dictionary to store clusters for each label
+    clusters = {}
+
+    # Loop over the labels (0, 1, 2)
+    for label_value in props.values():
+        # Create a binary mask for the current label
+        mask = (grid == label_value).astype(int)  # Ensure it's an integer array
+        
+        # Ensure mask is 2D (should already be, but double-check)
+        if mask.ndim != 2:
+            raise ValueError(f"Mask must be 2D, but got shape {mask.shape}")
+        
+        # Define structure based on connectivity - ensure it matches mask dimensions
+        if connectivity == 2:
+            # 8-connectivity: 3x3 structure (all neighbors including diagonals)
+            structure = np.ones((3, 3), dtype=int)
+        else:
+            # 4-connectivity: cross structure (only horizontal/vertical neighbors)
+            structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=int)
+        
+        # Label the connected components (clusters) in the mask
+        cluster_labels, num_clusters = label(mask, structure=structure)
+        
+        # Need to change dict to {'0':[[0,0],[0,1],[0,2]], '1':[[1,0],[1,1],[1,2]], [[1,0],[1,1],[1,2]], '2':[[2,0],[2,1],[2,2]]}
+        # Store the cluster labels and the number of clusters found
+        clusters[str(label_value)] = []
+
+        # Loop through the cluster labels and collect the coordinates for each cluster
+        for cluster_id in range(1, num_clusters + 1):  # Cluster labels are 1-indexed
+            # Get the coordinates (indices) of the grid cells belonging to this cluster
+            cluster_cells = np.column_stack(np.where(cluster_labels == cluster_id))
+            
+            # Store the coordinates for the current cluster in the dictionary
+            clusters[str(label_value)].append([list(point) for point in cluster_cells])
+
+    return clusters
+
 def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_complex.csv", init_node='a', prune=True, display=True):
     '''
     Map must only contain empty set '{}' or alphabetical values
@@ -318,12 +368,15 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     # print(f"replaced grid: {grid}")
 
     # draw_path(grid, start, goal, [], 'Map')
-    clusters = create_clusters(np.asarray(grid))
+
+    # Alternative method for clustering 
+    clusters = cluster_quickly(np.asarray(grid), props)
+    # clusters = create_clusters(np.asarray(grid))
     clean_clusters(clusters)
     # print(f"Clusters: {clusters}")
     unique_clusters = each_cluster_uuid(clusters)
     # print(f"Unique Clusters: {unique_clusters}")
-    edges = create_graph(unique_clusters)
+    edges = create_graph(unique_clusters, np.asarray(grid).shape)
     # print(f"Edges: {edges}")
     reversed_edges = [sublist[::-1] for sublist in edges[::-1]]
     # print(f"Reversed Edges: {reversed_edges}")

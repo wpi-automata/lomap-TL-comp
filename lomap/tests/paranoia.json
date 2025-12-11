@@ -1,27 +1,52 @@
 [
     {
-        "hazard": "collision with furniture while navigating toward the couch",
+        "hazard": "bumping into obstacles",
         "probability": 0.4,
         "minor_injury": "low",
         "major_injury": "low",
         "death": "none",
         "objects": [
             "robot",
-            "bomb lab"
+            "table", 
+            "trash bin"
         ],
-        "danger_score": 2.4000000000000004
+        "danger_score": 1.3
     },
     {
-        "hazard": "entanglement or dragging of power/av cables near the television",
+        "hazard": "Running over glass shards",
         "probability": 0.25,
         "minor_injury": "low",
         "major_injury": "low",
         "death": "none",
         "objects": [
             "robot",
-            "kitchen",
-            "game console"
+            "glass"
         ],
-        "danger_score": 1.5
+        "danger_score": 3.3
+    }, 
+    {
+        "hazard": "Detonating explosives",
+        "probability": 0.25,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "bomb", 
+            "string"
+        ],
+        "danger_score": 5.4
+    },
+    {
+        "hazard": "caught in rug",
+        "probability": 0.25,
+        "minor_injury": "low",
+        "major_injury": "low",
+        "death": "none",
+        "objects": [
+            "robot",
+            "rug"
+        ],
+        "danger_score": 1.1
     }
 ]
