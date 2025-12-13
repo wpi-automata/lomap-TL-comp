@@ -710,7 +710,7 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
                 risk_data['embedding'].unsqueeze(0)
             )
             print(f"Cosine similarity between '{pa_label}' and '{risk_label}': {similarity.item():.4f}")
-            if similarity.item() > 0.65:
+            if similarity.item() > 0.90:
                 print(f"Objects '{pa_label}' and '{risk_label}' are the same")
                 if pa_label not in similarity_dict:
                     similarity_dict[pa_label] = []
