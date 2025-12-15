@@ -105,7 +105,7 @@ def visualize_path(occupancy_grid, symbol_grid, weights, path, start=None, goal=
         base_image = (1 - alpha) * base_image + alpha * weight_overlay
     
     # Display base image
-    ax1.imshow(base_image, origin='upper', interpolation='nearest')
+    ax1.imshow(base_image, origin='lower', interpolation='nearest')
     
     # Draw path
     if path and len(path) > 0:
@@ -137,7 +137,7 @@ def visualize_path(occupancy_grid, symbol_grid, weights, path, start=None, goal=
     ax1.set_ylabel('Row (Y)', fontsize=10)
     ax1.grid(True, alpha=0.3)
     ax1.legend(loc='upper right')
-    ax1.invert_yaxis()  # Match image coordinates
+    # origin='lower' in imshow places (0,0) at bottom-left (standard mathematical convention)
     
     # === Weights Only View (ax2) ===
     if show_weights and weights:
@@ -151,13 +151,13 @@ def visualize_path(occupancy_grid, symbol_grid, weights, path, start=None, goal=
             weight_array = np.array(weights)
         
         # Create heatmap
-        im = ax2.imshow(weight_array, cmap='hot', origin='upper', interpolation='nearest')
+        im = ax2.imshow(weight_array, cmap='hot', origin='lower', interpolation='nearest')
         
         # Draw obstacles as black overlay
         obstacle_mask = og > OBS_THRESHOLD
         overlay = np.zeros((rows, cols, 4))
         overlay[obstacle_mask, :] = [0, 0, 0, 1]  # Black with full opacity
-        ax2.imshow(overlay, origin='upper', interpolation='nearest')
+        ax2.imshow(overlay, origin='lower', interpolation='nearest')
         
         # Draw path on weights view
         if path and len(path) > 0:
@@ -186,7 +186,7 @@ def visualize_path(occupancy_grid, symbol_grid, weights, path, start=None, goal=
         ax2.set_ylabel('Row (Y)', fontsize=10)
         ax2.grid(True, alpha=0.3)
         ax2.legend(loc='upper right')
-        ax2.invert_yaxis()
+        # origin='lower' in imshow places (0,0) at bottom-left (standard mathematical convention)
         
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax2, fraction=0.046, pad=0.04)
@@ -283,7 +283,7 @@ def visualize_path_simple(occupancy_grid, symbol_grid, weights, path, start=None
         alpha = 0.3
         base_image = (1 - alpha) * base_image + alpha * weight_overlay
     
-    ax.imshow(base_image, origin='upper', interpolation='nearest')
+    ax.imshow(base_image, origin='lower', interpolation='nearest')
     
     # Draw path
     if path and len(path) > 0:
@@ -312,7 +312,7 @@ def visualize_path_simple(occupancy_grid, symbol_grid, weights, path, start=None
     ax.set_ylabel('Row (Y)', fontsize=11)
     ax.grid(True, alpha=0.3)
     ax.legend(loc='upper right')
-    ax.invert_yaxis()
+    # origin='lower' in imshow places (0,0) at bottom-left (standard mathematical convention)
     
     plt.tight_layout()
     

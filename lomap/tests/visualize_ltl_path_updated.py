@@ -26,8 +26,22 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
     
     ax1.set_title(f'Spatial Path with LTL States\nFormula: {ltl_formula}', fontsize=14, fontweight='bold')
     
-    row = len(grid)
-    col = len(grid[0])
+    # Check if grid is empty or invalid
+    if grid is None:
+        raise ValueError("Grid is None")
+    
+    # Handle numpy arrays
+    if isinstance(grid, np.ndarray):
+        if grid.size == 0 or len(grid.shape) < 2:
+            raise ValueError(f"Grid is empty or invalid shape: {grid.shape}")
+        row, col = grid.shape[0], grid.shape[1]
+    else:
+        if not grid or len(grid) == 0:
+            raise ValueError("Grid is empty or invalid")
+        if not grid[0] or (hasattr(grid[0], '__len__') and len(grid[0]) == 0):
+            raise ValueError("Grid has no columns")
+        row = len(grid)
+        col = len(grid[0]) if hasattr(grid[0], '__len__') else 1
     
     symbol_colors = {
         'a': 'magenta',
@@ -43,10 +57,14 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
     
     for i in range(row):
         for j in range(col):
-            cell_value = grid[i][j]
+            # Handle both list and numpy array access
+            if isinstance(grid, np.ndarray):
+                cell_value = grid[i, j]
+            else:
+                cell_value = grid[i][j]
             
             is_obstacle = False
-            if occupancy_grid is not None and i < len(occupancy_grid) and j < len(occupancy_grid[0]):
+            if occupancy_grid is not None and len(occupancy_grid) > 0 and len(occupancy_grid[0]) > 0 and i < len(occupancy_grid) and j < len(occupancy_grid[0]):
                 is_obstacle = occupancy_grid[i][j] > OBS_THRESHOLD
             
             if cell_value == -1 or is_obstacle: 
@@ -229,17 +247,17 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
 if __name__ == '__main__':
     # Load maps
     occupancy_grid, symbol_grid, weights, origin, resolution = load_maps(
-        '/home/hello-robot/reliable_robot_llms/maps/uh2.yaml',
-        '/home/hello-robot/reliable_robot_llms/maps/uh2_labels.csv',
-        '/home/hello-robot/reliable_robot_llms/maps/uh2_weights.csv'
+        '/home/colette/MQP/reliable_robot_llms/maps/uh2.yaml',
+        '/home/colette/MQP/reliable_robot_llms/maps/uh2_labels.csv',
+        '/home/colette/MQP/reliable_robot_llms/maps/uh2_weights.csv'
     )
     
     # Start and goal positions that require navigating around a/b regions
     # a: rows 180-217, cols 140-219
     # b: rows 213-243, cols 187-222
-    start = grid_to_world(170, 170, origin, resolution)  # Before the regions
+    start = [170, 170]  # Before the regions
     
-    goal = grid_to_world(230, 210, origin, resolution)  # Past the regions
+    goal = [230, 210]  # Past the regions
     
     # Create LTL expression (set to None for no constraints)
     ltl_formula = "(G !a) && (G !b )"
@@ -247,17 +265,29 @@ if __name__ == '__main__':
     ltl_expression.from_formula(ltl_formula)
     
     # Create working copy (A* modifies the grid)
-    grid = [row[:] for row in symbol_grid]
+    # Use symbol_grid for state trace reconstruction, not occupancy_grid
+    if isinstance(symbol_grid, np.ndarray):
+        grid = symbol_grid.copy()
+    elif isinstance(symbol_grid, list):
+        grid = [row[:] for row in symbol_grid]
+    else:
+        grid = symbol_grid.copy() if hasattr(symbol_grid, 'copy') else symbol_grid
     
     # Run A* planner
     path, symbols_produced, steps, final_state = state_aware_astar(
-        start, goal, grid, occupancy_grid, weights, ltl_expression, origin=origin, resolution=resolution, use_8_neighbors=True
+        start, goal, symbol_grid, occupancy_grid, weights, ltl_expression, origin=origin, resolution=resolution, use_8_neighbors=True
     )
-    
+    print(f"Path: {path}")
+    if grid is not None and len(grid) > 0 and len(grid[0]) > 0:
+        print(f"Grid dimensions: {len(grid)}, {len(grid[0])}")
+    else:
+        print(f"Grid dimensions: Invalid or empty grid")
+        print(f"Grid type: {type(grid)}, Grid length: {len(grid) if grid else 'None'}")
     if path:
         # Reconstruct state trace (path is in world coordinates, need to pass origin/resolution)
-        state_trace = reconstruct_state_trace(path, grid, ltl_expression, origin=origin, resolution=resolution)
-        
+        # Use symbol_grid for state trace, not occupancy_grid
+        state_trace = reconstruct_state_trace(path, symbol_grid, ltl_expression, origin=origin, resolution=resolution)
+
         # Save path data to JSON file for web visualization
         path_data = {
             'path': path,  # World coordinates

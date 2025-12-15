@@ -74,7 +74,8 @@ def state_aware_astar(start, goal, symbol_grid, occupancy_grid, weights, LTL_exp
     '''
     # Convert world coordinates to grid indices if origin and resolution are provided
     return_world_coords = False
-    if origin is not None and resolution is not None:
+    #overrode
+    if origin is not None and resolution is not None and False:
         return_world_coords = True
         start_grid = world_to_grid(start[0], start[1], origin, resolution)
         goal_grid = world_to_grid(goal[0], goal[1], origin, resolution)
@@ -423,14 +424,14 @@ def reconstruct_state_trace(path, grid, LTL_expression, origin=None, resolution=
     
     for pos in path:
         # Convert world coordinates to grid indices if needed
-        if origin is not None and resolution is not None:
+        if origin is not None and resolution is not None and False:
             # pos is in world coordinates [x, y], convert to grid indices
             grid_pos = world_to_grid(pos[0], pos[1], origin, resolution)
             row, col = grid_pos[0], grid_pos[1]
         else:
             # pos is already in grid indices [row, col]
             row, col = int(pos[0]), int(pos[1])
-        
+        print(f"Row: {row}, Col: {col}")
         cell_value = grid[row][col]
         
         cell_props = set()
