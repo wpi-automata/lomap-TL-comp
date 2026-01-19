@@ -14,7 +14,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from lomap.classes.automata_updated import Fsa
-from lomap.tests.a_star_state_aware import grid_to_world, state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
+from lomap.rrllmmqp.a_star_state_aware import grid_to_world, state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
 
 
 def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, symbol_positions, 
@@ -247,9 +247,9 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
 if __name__ == '__main__':
     # Load maps
     occupancy_grid, symbol_grid, weights, origin, resolution = load_maps(
-        '/home/colette/MQP/reliable_robot_llms/maps/uh2.yaml',
-        '/home/colette/MQP/reliable_robot_llms/maps/uh2_labels.csv',
-        '/home/colette/MQP/reliable_robot_llms/maps/uh2_weights.csv'
+        '/home/bdc/MQP/reliable_robot_llms/maps/uh2.yaml',
+        '/home/bdc/MQP/reliable_robot_llms/maps/uh2_labels.csv',
+        '/home/bdc/MQP/reliable_robot_llms/maps/uh2_weights.csv'
     )
     
     # Start and goal positions that require navigating around a/b regions
