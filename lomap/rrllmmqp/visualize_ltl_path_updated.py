@@ -17,7 +17,7 @@ from lomap.classes.automata_updated import Fsa
 from lomap.rrllmmqp.a_star_state_aware import grid_to_world, state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
 
 
-def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, symbol_positions, 
+def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
                             occupancy_grid=None, weights=None, save_path='ltl_path_visualization.png'):
     """Create visualization showing spatial path, LTL states, and transitions."""
     fig = plt.figure(figsize=(18, 8))
