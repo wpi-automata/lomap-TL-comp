@@ -633,16 +633,16 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
         data = json.load(file)
 
     # Put objects in dictionary with associated risk value
-    # risk_dict = {}
-    # for item in data:
-    #     for object in item['objects']:
-    #         if object not in risk_dict: 
-    #             risk_dict[object] = {'danger_score': item['danger_score'], 'embedding': None}
+    risk_dict = {}
+    for item in data:
+        for object in item['objects']:
+            if object not in risk_dict: 
+                risk_dict[object] = {'danger_score': item['danger_score'], 'embedding': None}
             
-    #         else: 
-    #             risk_dict[object]['danger_score']  = item['danger_score'] + risk_dict[object]['danger_score'] # Sum the danger scores for each object, also may need to change...
+            else: 
+                risk_dict[object]['danger_score']  = item['danger_score'] + risk_dict[object]['danger_score'] # Sum the danger scores for each object, also may need to change...
 
-    # print(risk_dict)
+    print(risk_dict)
 
     # Define example specification and calculate product automaton
     # TODO: Change map to match paranoia output 
@@ -668,59 +668,59 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
     shortest_word, pa, clusters = result
 
     # Now organize the labels in a dict so we can encode them and get their relationship
-    # pa_dict = parse_abbrev_label(pa)
-    #print(pa_dict)
+    pa_dict = parse_abbrev_label(pa)
+    print(pa_dict)
 
-    # # Use CLIP to embed the product labels and paranoia output 
+    # Use CLIP to embed the product labels and paranoia output 
     # Use subprocess to call CLIP in clipenv (Python 3.9+) environment
     # This allows us to use transformers while keeping lomapenv (Python 3.7)
-    # try:
-    #     pa_dict = embed_labels_via_subprocess(pa_dict, model_name="openai/clip-vit-base-patch32")
-    #     #print(pa_dict)
+    try:
+        pa_dict = embed_labels_via_subprocess(pa_dict, model_name="openai/clip-vit-base-patch32")
+        #print(pa_dict)
 
-    #     risk_dict_embeddings = embed_labels_via_subprocess(risk_dict, model_name="openai/clip-vit-base-patch32")
-    #     print("Risk dict embeddings: ", risk_dict_embeddings)
-    # except RuntimeError as e:
-    #     print(f"Warning: CLIP embedding failed: {e}")
-    #     print("Falling back to original embed_labels (requires transformers in current environment)")
-    #     # Fallback to original method if subprocess fails
-    #     try:
-    #         from transformers import AutoTokenizer, CLIPTextModel
-    #         model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
-    #         tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
-    #         pa_dict = embed_labels(pa_dict, model, tokenizer)
-    #         risk_dict_embeddings = embed_labels(risk_dict, model, tokenizer)
-    #     except ImportError:
-    #         raise RuntimeError("CLIP embedding unavailable: transformers not installed and clipenv not found")
+        risk_dict_embeddings = embed_labels_via_subprocess(risk_dict, model_name="openai/clip-vit-base-patch32")
+        print("Risk dict embeddings: ", risk_dict_embeddings)
+    except RuntimeError as e:
+        print(f"Warning: CLIP embedding failed: {e}")
+        print("Falling back to original embed_labels (requires transformers in current environment)")
+        # Fallback to original method if subprocess fails
+        try:
+            from transformers import AutoTokenizer, CLIPTextModel
+            model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
+            tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+            pa_dict = embed_labels(pa_dict, model, tokenizer)
+            risk_dict_embeddings = embed_labels(risk_dict, model, tokenizer)
+        except ImportError:
+            raise RuntimeError("CLIP embedding unavailable: transformers not installed and clipenv not found")
 
 
-    # # Calculate cosine similarity between the two embeddings
-    # # If cosine similarity is less than some threshold, can assume objects not the same
-    # similarity_dict = {}
-    # for pa_label, pa_data in pa_dict.items():
-    #     # Skip if no embedding was created (e.g., empty label)
-    #     if 'embedding' not in pa_data:
-    #         continue
-    #     for risk_label, risk_data in risk_dict_embeddings.items():
-    #         # Skip if no embedding was created
-    #         if 'embedding' not in risk_data:
-    #             continue
-    #         similarity = F.cosine_similarity(
-    #             pa_data['embedding'].unsqueeze(0),
-    #             risk_data['embedding'].unsqueeze(0)
-    #         )
-    #         print(f"Cosine similarity between '{pa_label}' and '{risk_label}': {similarity.item():.4f}")
-    #         if similarity.item() > 0.90:
-    #             print(f"Objects '{pa_label}' and '{risk_label}' are the same")
-    #             if pa_label not in similarity_dict:
-    #                 similarity_dict[pa_label] = []
-    #             similarity_dict[pa_label].append({risk_label: similarity.item()})
+    # Calculate cosine similarity between the two embeddings
+    # If cosine similarity is less than some threshold, can assume objects not the same
+    similarity_dict = {}
+    for pa_label, pa_data in pa_dict.items():
+        # Skip if no embedding was created (e.g., empty label)
+        if 'embedding' not in pa_data:
+            continue
+        for risk_label, risk_data in risk_dict_embeddings.items():
+            # Skip if no embedding was created
+            if 'embedding' not in risk_data:
+                continue
+            similarity = F.cosine_similarity(
+                pa_data['embedding'].unsqueeze(0),
+                risk_data['embedding'].unsqueeze(0)
+            )
+            print(f"Cosine similarity between '{pa_label}' and '{risk_label}': {similarity.item():.4f}")
+            if similarity.item() > 0.90:
+                print(f"Objects '{pa_label}' and '{risk_label}' are the same")
+                if pa_label not in similarity_dict:
+                    similarity_dict[pa_label] = []
+                similarity_dict[pa_label].append({risk_label: similarity.item()})
     
-    # print(similarity_dict)
+    print(similarity_dict)
 
     # Weight the edges of the product automaton based on the cosine similarity
     # Return the weighted product automaton
-    # pa, label_weights = weight_edges(pa, similarity_dict, risk_dict_embeddings)
+    pa, label_weights = weight_edges(pa, similarity_dict, risk_dict_embeddings)
     
     # Extract edge weights for visualization
     # At the end of your main() function, replace the visualization with:
@@ -731,77 +731,77 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
     print(f"\\nProduct automaton graph type: {type(pa.g)}")
     print(f"Is MultiDiGraph: {isinstance(pa.g, nx.MultiDiGraph)}")
 
-    # # Get the shortest weighted path
-    # def get_edge_weight(u, v, edge_data):
-    #     """Extract weight from edge data, handling MultiDiGraph"""
-    #     if isinstance(edge_data, dict):
-    #         # For MultiDiGraph, edge_data is a dict of {key: data}
-    #         # Get minimum weight across all parallel edges
-    #         min_weight = float('inf')
-    #         for key, data in edge_data.items():
-    #             weight = data.get('attr_dict', {}).get('weight', 1.0)
-    #             min_weight = min(min_weight, weight)
-    #         return min_weight if min_weight != float('inf') else 1.0
-    #     else:
-    #         # For regular DiGraph, edge_data is the data dict directly
-    #         return edge_data.get('attr_dict', {}).get('weight', 1.0)
+    # Get the shortest weighted path
+    def get_edge_weight(u, v, edge_data):
+        """Extract weight from edge data, handling MultiDiGraph"""
+        if isinstance(edge_data, dict):
+            # For MultiDiGraph, edge_data is a dict of {key: data}
+            # Get minimum weight across all parallel edges
+            min_weight = float('inf')
+            for key, data in edge_data.items():
+                weight = data.get('attr_dict', {}).get('weight', 1.0)
+                min_weight = min(min_weight, weight)
+            return min_weight if min_weight != float('inf') else 1.0
+        else:
+            # For regular DiGraph, edge_data is the data dict directly
+            return edge_data.get('attr_dict', {}).get('weight', 1.0)
     
-    # def weighted_shortest_path(graph, source, target):
-    #     """Find shortest weighted path using Dijkstra's algorithm"""
-    #     import heapq
+    def weighted_shortest_path(graph, source, target):
+        """Find shortest weighted path using Dijkstra's algorithm"""
+        import heapq
         
-    #     is_multigraph = isinstance(graph, (nx.MultiDiGraph, nx.MultiGraph))
-    #     dist = {source: 0.0}
-    #     prev = {}
-    #     pq = [(0.0, source)]
-    #     visited = set()
+        is_multigraph = isinstance(graph, (nx.MultiDiGraph, nx.MultiGraph))
+        dist = {source: 0.0}
+        prev = {}
+        pq = [(0.0, source)]
+        visited = set()
         
-    #     while pq:
-    #         current_dist, u = heapq.heappop(pq)
+        while pq:
+            current_dist, u = heapq.heappop(pq)
             
-    #         if u in visited:
-    #             continue
-    #         visited.add(u)
+            if u in visited:
+                continue
+            visited.add(u)
             
-    #         if u == target:
-    #             break
+            if u == target:
+                break
             
-    #         # Get neighbors
-    #         if is_multigraph:
-    #             neighbors = {}
-    #             for v, keys in graph[u].items():
-    #                 # Get minimum weight edge to this neighbor
-    #                 min_weight = float('inf')
-    #                 for key, edge_data in keys.items():
-    #                     weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
-    #                     min_weight = min(min_weight, weight)
-    #                 if min_weight != float('inf'):
-    #                     neighbors[v] = min_weight
-    #         else:
-    #             neighbors = {}
-    #             for v, edge_data in graph[u].items():
-    #                 weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
-    #                 neighbors[v] = weight
+            # Get neighbors
+            if is_multigraph:
+                neighbors = {}
+                for v, keys in graph[u].items():
+                    # Get minimum weight edge to this neighbor
+                    min_weight = float('inf')
+                    for key, edge_data in keys.items():
+                        weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
+                        min_weight = min(min_weight, weight)
+                    if min_weight != float('inf'):
+                        neighbors[v] = min_weight
+            else:
+                neighbors = {}
+                for v, edge_data in graph[u].items():
+                    weight = edge_data.get('attr_dict', {}).get('weight', 1.0)
+                    neighbors[v] = weight
             
-    #         # Update distances
-    #         for v, weight in neighbors.items():
-    #             alt = current_dist + weight
-    #             if v not in dist or alt < dist[v]:
-    #                 dist[v] = alt
-    #                 prev[v] = u
-    #                 heapq.heappush(pq, (alt, v))
+            # Update distances
+            for v, weight in neighbors.items():
+                alt = current_dist + weight
+                if v not in dist or alt < dist[v]:
+                    dist[v] = alt
+                    prev[v] = u
+                    heapq.heappush(pq, (alt, v))
         
-    #     # Reconstruct path
-    #     if target not in dist or dist[target] == float('inf'):
-    #         return None, float('inf')
+        # Reconstruct path
+        if target not in dist or dist[target] == float('inf'):
+            return None, float('inf')
         
-    #     path = []
-    #     u = target
-    #     while u is not None:
-    #         path.insert(0, u)
-    #         u = prev.get(u)
+        path = []
+        u = target
+        while u is not None:
+            path.insert(0, u)
+            u = prev.get(u)
         
-    #     return path, dist[target]
+        return path, dist[target]
     
     labels = {n: d['attr_dict']['abbrev_label'] for n, d in pa.g.nodes.items() if ('attr_dict' in d and 'abbrev_label' in d['attr_dict'])}
     print("Labels: ", labels)
@@ -825,44 +825,44 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
         
         return False
     
-    # for f in iter(pa.final):
-    #     # Check if final node has valid proposition
-    #     if labels.get(f) and literal_eval(labels.get(f))[0] != '{}':
-            # trajectory, weight = weighted_shortest_path(pa.g, init_node, f)
-            # if trajectory:
-            #     # Truncate path at first accepting state encountered
-            #     # For "eventually X" specifications, we only need to reach X once
-            #     truncated_trajectory = []
-            #     for idx, node in enumerate(trajectory):
-            #         truncated_trajectory.append(node)
-            #         # Check if this is an accepting state (excluding the initial state)
-            #         if len(truncated_trajectory) > 1:
-            #             is_accepting = is_accepting_state(node)
-            #             node_label = labels.get(node, 'N/A')
-            #             print(f"  Node {idx}: {node}, label: {node_label}, is_accepting: {is_accepting}")
-            #             if is_accepting:
-            #                 print(f"Truncating path at accepting state: {node} (label: {node_label})")
-            #                 break
+    for f in iter(pa.final):
+        # Check if final node has valid proposition
+        if labels.get(f) and literal_eval(labels.get(f))[0] != '{}':
+            trajectory, weight = weighted_shortest_path(pa.g, init_node, f)
+            if trajectory:
+                # Truncate path at first accepting state encountered
+                # For "eventually X" specifications, we only need to reach X once
+                truncated_trajectory = []
+                for idx, node in enumerate(trajectory):
+                    truncated_trajectory.append(node)
+                    # Check if this is an accepting state (excluding the initial state)
+                    if len(truncated_trajectory) > 1:
+                        is_accepting = is_accepting_state(node)
+                        node_label = labels.get(node, 'N/A')
+                        print(f"  Node {idx}: {node}, label: {node_label}, is_accepting: {is_accepting}")
+                        if is_accepting:
+                            print(f"Truncating path at accepting state: {node} (label: {node_label})")
+                            break
                 
-            #     # Recalculate weight for truncated path
-            #     truncated_weight = 0.0
-            #     is_multigraph = isinstance(pa.g, (nx.MultiDiGraph, nx.MultiGraph))
-            #     for i in range(len(truncated_trajectory) - 1):
-            #         u, v = truncated_trajectory[i], truncated_trajectory[i+1]
-            #         if is_multigraph:
-            #             # Get minimum weight edge
-            #             min_weight = float('inf')
-            #             for key, edge_data in pa.g[u][v].items():
-            #                 w = edge_data.get('attr_dict', {}).get('weight', 1.0)
-            #                 min_weight = min(min_weight, w)
-            #             truncated_weight += min_weight if min_weight != float('inf') else 1.0
-            #         else:
-            #             w = pa.g[u][v].get('attr_dict', {}).get('weight', 1.0)
-            #             truncated_weight += w if w is not None else 1.0
+                # Recalculate weight for truncated path
+                truncated_weight = 0.0
+                is_multigraph = isinstance(pa.g, (nx.MultiDiGraph, nx.MultiGraph))
+                for i in range(len(truncated_trajectory) - 1):
+                    u, v = truncated_trajectory[i], truncated_trajectory[i+1]
+                    if is_multigraph:
+                        # Get minimum weight edge
+                        min_weight = float('inf')
+                        for key, edge_data in pa.g[u][v].items():
+                            w = edge_data.get('attr_dict', {}).get('weight', 1.0)
+                            min_weight = min(min_weight, w)
+                        truncated_weight += min_weight if min_weight != float('inf') else 1.0
+                    else:
+                        w = pa.g[u][v].get('attr_dict', {}).get('weight', 1.0)
+                        truncated_weight += w if w is not None else 1.0
                 
-            #     if truncated_weight < shortest_weight:
-            #         shortest_trajectory = truncated_trajectory
-            #         shortest_weight = truncated_weight
+                if truncated_weight < shortest_weight:
+                    shortest_trajectory = truncated_trajectory
+                    shortest_weight = truncated_weight
 
     shortest_trajectory = None
     for f in iter(pa.final):
@@ -886,5 +886,5 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
     if visualize:
         fig, ax = visualize_weighted_graph(pa, highlight_path=shortest_trajectory)
         plt.show()
-    label_weights = []
+    #label_weights = []
     return pa, shortest_trajectory, shortest_weight, path_centers, label_weights
