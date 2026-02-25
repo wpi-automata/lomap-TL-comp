@@ -376,17 +376,13 @@ def four_connected_with_gx_check_state_restraint(
         new_pos = (new_row, new_col)
         node_to_add = (new_pos, next_ltl_state)
 
-        # Check if not already visited
-        if node_to_add in visited:
-            continue
-
         # Get cell weight from weights dictionary (default to 0 if not found)
         cell_weight = weights.get((new_row, new_col), 0)
 
         # Calculate gx using formula: gx = parent_gx + cell_weight + travel_constant
         gx = parent_gx + cell_weight + TRAVEL_CONSTANT
 
-        if node_to_add not in visited or gx < gx_dict.get(node_to_add, float("inf")):
+        if  gx < gx_dict.get(node_to_add, float("inf")):
             parent_dict[node_to_add] = node
             gx_dict[node_to_add] = gx
             dx_goal = abs(goal[1] - new_col)
@@ -485,9 +481,6 @@ def eight_connected_with_gx_check_state_restraint(
         new_pos = (new_row, new_col)
         node_to_add = (new_pos, next_ltl_state)
 
-        # Check if not already visited
-        if node_to_add in visited:
-            continue
 
         # Get cell weight from weights dictionary (default to 0 if not found)
         cell_weight = weights.get((new_row, new_col), 0)
@@ -499,7 +492,7 @@ def eight_connected_with_gx_check_state_restraint(
         travel_cost = TRAVEL_CONSTANT * math.sqrt(2) if is_diagonal else TRAVEL_CONSTANT
         gx = parent_gx + cell_weight + travel_cost
 
-        if node_to_add not in visited or gx < gx_dict.get(node_to_add, float("inf")):
+        if gx < gx_dict.get(node_to_add, float("inf")):
             parent_dict[node_to_add] = node
             gx_dict[node_to_add] = gx
             dx_goal = abs(goal[1] - new_col)
