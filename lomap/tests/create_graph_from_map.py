@@ -4,6 +4,7 @@ import math
 import unittest
 import networkx as nx
 
+
 def create_graph(clusters):
     edges = list()
     keys = list(clusters.keys())
@@ -14,12 +15,12 @@ def create_graph(clusters):
         for j in range(i+1, len(keys)):
             comparison_key = keys[j]
             comparison_cluster = clusters.get(comparison_key)
-            
+
             if cluster_connected(cluster, comparison_cluster):
                 edges.append([key, comparison_key])
-    
+
     return edges
-                    
+
 
 def cluster_connected(cluster, comparison_cluster):
     for point in cluster:
@@ -28,12 +29,13 @@ def cluster_connected(cluster, comparison_cluster):
                 return True
     return False
 
+
 def each_cluster_uuid(clusters):
     unique_clusters = dict()
 
     for key in clusters.keys():
         key_clusters = clusters.get(key)
-        if len(key_clusters)>1:
+        if len(key_clusters) > 1:
             for i in range(len(key_clusters)):
                 new_key = str(str(key)+"."+str(i))
                 unique_clusters[new_key] = key_clusters[i]
@@ -42,66 +44,93 @@ def each_cluster_uuid(clusters):
 
     return unique_clusters
 
+
 def create_clusters(grid):
     clusters = dict()
     for r in range(grid.shape[0]):
         for c in range(grid.shape[1]):
-            val = grid[r,c]
+            val = grid[r, c]
             cluster(r, c, val, clusters)
     return clusters
 
+
 def cluster(r, c, val, clusters):
-    first_in_list = [[r,c]]
+    first_in_list = [[r, c]]
     if str(val) in clusters.keys():
         val_clusters = clusters.get(str(val))
         neighbor_clusters = []
         for i in range(len(val_clusters)):
             cluster = val_clusters[i]
-            if is_neighbor(r,c,cluster):
+            if is_neighbor(r, c, cluster):
                 neighbor_clusters.append(cluster)
         if neighbor_clusters:
             for cluster in neighbor_clusters:
                 val_clusters.remove(cluster)
-            merged_neighbor_clusters = [element for nestedlist in neighbor_clusters for element in nestedlist]
-            merged_neighbor_clusters.append([r,c])
+            merged_neighbor_clusters = [
+                element for nestedlist in neighbor_clusters for element in nestedlist]
+            merged_neighbor_clusters.append([r, c])
             val_clusters.append(merged_neighbor_clusters)
             return
         val_clusters.append(first_in_list)
         return
-    clusters[str(val)]= [first_in_list]
+    clusters[str(val)] = [first_in_list]
 
-#uses 4 connected neighbor check
-def is_neighbor(r,c,cluster):
+# uses 4 connected neighbor check
+
+
+def is_neighbor(r, c, cluster):
     for node in cluster:
-        if connected(node, [r,c]):
+        if connected(node, [r, c]):
             return True
     return False
-        
-def connected(a, b):
-    return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1. #if they are next to each other they will be 1 unit away
 
-def draw_graph(nx_graph, labels=None):
-    
+
+def connected(a, b):
+    # if they are next to each other they will be 1 unit away
+    return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1.
+
+
+def draw_graph(nx_graph, labels=None, use_pi=True, use_weight=False):
+
     pos = nx.nx_agraph.graphviz_layout(nx_graph, prog="neato")
     fig, ax = plt.subplots()
     nx.draw_networkx_nodes(nx_graph, pos, ax=ax)
+    labels = {n:lab for n,lab in labels.items() if n in pos}
     nx.draw_networkx_labels(nx_graph, pos, labels=labels, ax=ax)
 
-    curved_edges = [edge for edge in nx_graph.edges() if list(reversed(edge)) in nx_graph.edges()]
+    curved_edges = [edge for edge in nx_graph.edges() if list(
+        reversed(edge)) in nx_graph.edges()]
     straight_edges = list(set(nx_graph.edges()) - set(curved_edges))
     nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=straight_edges)
     arc_rad = 0.25
-    nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=curved_edges, connectionstyle=f'arc3, rad = {arc_rad}')
+    nx.draw_networkx_edges(nx_graph, pos, ax=ax, edgelist=curved_edges,
+                           connectionstyle=f'arc3, rad = {arc_rad}')
 
-    edge_labels = nx.get_edge_attributes(nx_graph,'pi')
-    # if not edge_labels:
-    #     edge_labels = nx.get_edge_attributes(nx_graph,'attr_dict')
-    curved_edge_labels = {edge: edge_labels[edge] for edge in curved_edges if edge in edge_labels}
-    straight_edge_labels = {edge: edge_labels[edge] for edge in straight_edges if edge in edge_labels}
-    my_draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=curved_edge_labels,rotate=False,rad = arc_rad)
-    nx.draw_networkx_edge_labels(nx_graph, pos, ax=ax, edge_labels=straight_edge_labels,rotate=False)
-    
+    if use_pi:
+        edge_labels = nx.get_edge_attributes(nx_graph, 'pi')
+        add_edge_labels(nx_graph, pos, ax, edge_labels, curved_edges, straight_edges, arc_rad)
+    elif use_weight:
+        edge_labels_w = nx.get_edge_attributes(nx_graph, 'weight')
+        edge_labels_r = nx.get_edge_attributes(nx_graph, 'relation')
+        edge_labels = {}
+        for key in edge_labels_w.keys():
+            edge_labels[key] = str(
+                f"{edge_labels_w.get(key)}, {edge_labels_r.get(key)}")
+        add_edge_labels(nx_graph, pos, ax, edge_labels, curved_edges, straight_edges, arc_rad)
+
     plt.show()
+
+def add_edge_labels(nx_graph, pos, ax, edge_labels, curved_edges, straight_edges, arc_rad):
+        # if not edge_labels:
+    #     edge_labels = nx.get_edge_attributes(nx_graph,'attr_dict')
+    curved_edge_labels = {edge: edge_labels[edge]
+                          for edge in curved_edges if edge in edge_labels}
+    straight_edge_labels = {edge: edge_labels[edge]
+                            for edge in straight_edges if edge in edge_labels}
+    my_draw_networkx_edge_labels(
+        nx_graph, pos, ax=ax, edge_labels=curved_edge_labels, rotate=False, rad=arc_rad)
+    nx.draw_networkx_edge_labels(
+        nx_graph, pos, ax=ax, edge_labels=straight_edge_labels, rotate=False)
 
 
 def my_draw_networkx_edge_labels(
@@ -217,7 +246,7 @@ def my_draw_networkx_edge_labels(
         pos_2 = ax.transData.transform(np.array(pos[n2]))
         linear_mid = 0.5*pos_1 + 0.5*pos_2
         d_pos = pos_2 - pos_1
-        rotation_matrix = np.array([(0,1), (-1,0)])
+        rotation_matrix = np.array([(0, 1), (-1, 0)])
         ctrl_1 = linear_mid + rad*rotation_matrix@d_pos
         ctrl_mid_1 = 0.5*pos_1 + 0.5*ctrl_1
         ctrl_mid_2 = 0.5*pos_2 + 0.5*ctrl_1
@@ -241,7 +270,8 @@ def my_draw_networkx_edge_labels(
             trans_angle = 0.0
         # use default box of white with white border
         if bbox is None:
-            bbox = dict(boxstyle="round", ec=(1.0, 1.0, 1.0), fc=(1.0, 1.0, 1.0))
+            bbox = dict(boxstyle="round", ec=(
+                1.0, 1.0, 1.0), fc=(1.0, 1.0, 1.0))
         if not isinstance(label, str):
             label = str(label)  # this makes "1" and 1 labeled the same
 
@@ -277,7 +307,8 @@ def my_draw_networkx_edge_labels(
 
 
 def main():
-    grid, start, goal = load_map('maps/numerical_maps/map_multiple_symbols_BCD.csv')
+    grid, start, goal = load_map(
+        'maps/numerical_maps/map_multiple_symbols_BCD.csv')
     draw_path(grid, start, goal, [], 'Map')
     clusters = create_clusters(np.asarray(grid))
     print(f"Clusters: {clusters}")
@@ -288,9 +319,9 @@ def main():
     reversed_edges = [sublist[::-1] for sublist in edges[::-1]]
     print(f"Reversed Edges: {reversed_edges}")
     edges.extend(reversed_edges)
-    
+
     for edge in edges:
-        edge.append({'pi':str(edge[0])+"->"+str(edge[1])})
+        edge.append({'pi': str(edge[0])+"->"+str(edge[1])})
 
     G = nx.DiGraph()
     G.add_edges_from(edges)
@@ -300,23 +331,28 @@ def main():
 class TestStringMethods(unittest.TestCase):
 
     def test_edges_symbol_not_touching_empty(self):
-        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
+        self.assertEqual(create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map(
+            'maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0])))), [['-1', '0'], ['0', '3'], ['3', '2']])
 
     def test_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
+        self.assertEqual(len(create_clusters(np.asarray(load_map(
+            'maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0])).get('2')), 2)
 
     def test_unique_clusters_multiple_groupings_same_symbol(self):
-        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
+        self.assertEqual(len(list(each_cluster_uuid(create_clusters(np.asarray(load_map(
+            'maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))).keys())), 5)
 
     def test_graph_symbol_not_touching_empty(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(
+            load_map('maps/unit_test_maps/numerical_maps/map_2_encased.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 4)
         self.assertEqual(G.number_of_edges(), 3)
 
     def test_graph_multiple_groupings_same_symbol(self):
-        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))))
+        edges = create_graph(each_cluster_uuid(create_clusters(np.asarray(
+            load_map('maps/unit_test_maps/numerical_maps/map_multiple_2_groups.csv')[0]))))
         G = nx.Graph()
         G.add_edges_from(edges)
         self.assertEqual(G.number_of_nodes(), 5)
@@ -324,6 +360,6 @@ class TestStringMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    
+
     # unittest.main()
     main()
