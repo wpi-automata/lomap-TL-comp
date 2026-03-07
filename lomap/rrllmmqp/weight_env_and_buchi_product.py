@@ -887,4 +887,4 @@ def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state
         fig, ax = visualize_weighted_graph(pa, highlight_path=shortest_trajectory)
         plt.show()
     #label_weights = []
-    return pa, shortest_trajectory, shortest_weight, path_centers, label_weights
+    return path_centers, label_weights
