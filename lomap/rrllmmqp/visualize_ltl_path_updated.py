@@ -7,6 +7,7 @@ import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, FancyArrowPatch
 import matplotlib.patches as mpatches
 import json
 
@@ -16,16 +17,9 @@ from lomap.classes.automata_updated import Fsa
 from lomap.rrllmmqp.a_star_state_aware import grid_to_world, state_aware_astar, load_maps, OBS_THRESHOLD, reconstruct_state_trace
 
 
-def _color_to_rgb(c):
-    """Convert matplotlib color to (r,g,b) in [0,1]."""
-    from matplotlib.colors import to_rgb
-    return to_rgb(c)
-
-
 def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula, 
-                            occupancy_grid=None, weights=None, save_path='ltl_path_visualization.png', dpi=150):
-    """Create visualization showing spatial path, LTL states, and transitions.
-    Uses a single raster image for the grid (fast) instead of one patch per cell."""
+                            occupancy_grid=None, weights=None, save_path='ltl_path_visualization.png'):
+    """Create visualization showing spatial path, LTL states, and transitions."""
     fig = plt.figure(figsize=(18, 8))
     ax1 = plt.subplot(1, 2, 1)
     ax2 = plt.subplot(1, 2, 2)
@@ -50,89 +44,114 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula,
         col = len(grid[0]) if hasattr(grid[0], '__len__') else 1
     
     symbol_colors = {
-        'a': _color_to_rgb('magenta'),
-        'b': _color_to_rgb('cyan'),
-        'c': _color_to_rgb('blueviolet'),
-        'd': _color_to_rgb('yellow'),
-        'e': _color_to_rgb('orange'),
-        'f': _color_to_rgb('lime'),
-        'g': _color_to_rgb('pink'),
-        'h': _color_to_rgb('lightblue'),
-        '{}': _color_to_rgb('lightyellow')
+        'a': 'magenta',
+        'b': 'cyan',
+        'c': 'blueviolet',
+        'd': 'yellow',
+        'e': 'orange',
+        'f': 'lime',
+        'g': 'pink',
+        'h': 'lightblue',
+        '{}': 'lightyellow'
     }
-    black = (0.0, 0.0, 0.0)
-    white = (1.0, 1.0, 1.0)
-    gray = (0.5, 0.5, 0.5)
-
-    # Build grid as single RGB image (one array instead of row*col patches)
-    rgb = np.zeros((row, col, 3), dtype=np.float32)
-    max_weight = max(weights.values()) if weights else 13.0
-    min_weight = min(weights.values()) if weights else 0.0
-    weight_range = max_weight - min_weight if max_weight > min_weight else 1.0
-
+    
     for i in range(row):
         for j in range(col):
+            # Handle both list and numpy array access
             if isinstance(grid, np.ndarray):
                 cell_value = grid[i, j]
             else:
                 cell_value = grid[i][j]
+            
             is_obstacle = False
             if occupancy_grid is not None and len(occupancy_grid) > 0 and len(occupancy_grid[0]) > 0 and i < len(occupancy_grid) and j < len(occupancy_grid[0]):
                 is_obstacle = occupancy_grid[i][j] > OBS_THRESHOLD
-            if cell_value == -1 or is_obstacle:
-                rgb[i, j] = black
+            
+            if cell_value == -1 or is_obstacle: 
+                ax1.add_patch(Rectangle((j-0.5, i-0.5), 1, 1, edgecolor='k', facecolor='k'))
             elif cell_value == 0 or cell_value == '' or cell_value == '{}':
+                cell_color = 'w'
+                edge_color = 'gray'
+                text_color = None
+                
                 if weights is not None and (i, j) in weights:
                     weight = weights[(i, j)]
-                    normalized_weight = (weight - min_weight) / weight_range if weight_range else 0.0
+                    max_weight = max(weights.values()) if weights else 13.0
+                    min_weight = min(weights.values()) if weights else 0.0
+                    
+                    if max_weight > min_weight:
+                        normalized_weight = (weight - min_weight) / (max_weight - min_weight)
+                    else:
+                        normalized_weight = 0.0
+                    
                     if normalized_weight < 0.01:
-                        rgb[i, j] = white
+                        cell_color = (1.0, 1.0, 1.0)
                     elif normalized_weight < 0.25:
                         t = normalized_weight / 0.25
-                        rgb[i, j] = (1.0, 1.0, 1.0 - t * 0.3)
+                        cell_color = (1.0, 1.0, 1.0 - t * 0.3)
+                        text_color = 'gray'
                     elif normalized_weight < 0.5:
                         t = (normalized_weight - 0.25) / 0.25
-                        rgb[i, j] = (1.0, 1.0 - t * 0.2, 0.7 - t * 0.7)
+                        cell_color = (1.0, 1.0 - t * 0.2, 0.7 - t * 0.7)
+                        text_color = 'darkred'
                     elif normalized_weight < 0.75:
                         t = (normalized_weight - 0.5) / 0.25
-                        rgb[i, j] = (1.0, 0.8 - t * 0.5, 0.0)
+                        cell_color = (1.0, 0.8 - t * 0.5, 0.0)
+                        text_color = 'darkred'
                     else:
                         t = (normalized_weight - 0.75) / 0.25
-                        rgb[i, j] = (1.0 - t * 0.3, 0.3 - t * 0.3, 0.0)
-                else:
-                    rgb[i, j] = white
+                        cell_color = (1.0 - t * 0.3, 0.3 - t * 0.3, 0.0)
+                        text_color = 'white'
+                    
+                    if weight > 0:
+                        edge_color = (0.6, 0.6, 0.6)
+                
+                ax1.add_patch(Rectangle((j-0.5, i-0.5), 1, 1, edgecolor=edge_color, 
+                                       facecolor=cell_color, linewidth=0.5))
+                
+                if weights is not None and (i, j) in weights and weights[(i, j)] > 0:
+                    if text_color is None:
+                        text_color = 'darkred'
+                    ax1.text(j, i, f'{weights[(i, j)]:.0f}', ha='center', va='center', 
+                            fontsize=8, color=text_color, fontweight='bold')
             else:
                 symbol = str(cell_value)
-                rgb[i, j] = symbol_colors.get(symbol, _color_to_rgb('lightgray'))
-                # blend with white for alpha effect
-                rgb[i, j] = 0.6 * rgb[i, j] + 0.4 * white
-
-    # extent: (left, right, bottom, top) in data coords; origin=upper so row 0 at top
-    ax1.imshow(rgb, origin='upper', extent=(-0.5, col - 0.5, row - 0.5, -0.5), aspect='equal', interpolation='nearest')
-
-    # Draw path as single line (fast) plus sparse arrows
-    if path and len(path) > 1:
-        path_cols = [p[1] for p in path]
-        path_rows = [p[0] for p in path]
-        ax1.plot(path_cols, path_rows, color='blue', linewidth=2, alpha=0.8, zorder=2)
-        # Arrow every N segments for direction
-        step = max(1, (len(path) - 1) // 8)
-        for i in range(0, len(path) - 1, step):
-            ax1.annotate('', xy=(path[i + 1][1], path[i + 1][0]), xytext=(path[i][1], path[i][0]),
-                         arrowprops=dict(arrowstyle='->', color='blue', lw=1.5), annotation_clip=True)
-
-    # Start and goal markers
-    ax1.plot(start[1], start[0], 's', color='green', markersize=12, markeredgecolor='darkgreen', markeredgewidth=2, zorder=3)
-    ax1.plot(goal[1], goal[0], 's', color='red', markersize=12, markeredgecolor='darkred', markeredgewidth=2, zorder=3)
-    ax1.text(start[1], start[0], 'S', ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=4)
-    ax1.text(goal[1], goal[0], 'G', ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=4)
-
-    ax1.set_xlim(-0.5, col - 0.5)
-    ax1.set_ylim(row - 0.5, -0.5)
+                color = symbol_colors.get(symbol, 'lightgray')
+                ax1.add_patch(Rectangle((j-0.5, i-0.5), 1, 1, edgecolor='k', facecolor=color, alpha=0.6))
+                ax1.text(j, i, symbol, ha='center', va='center', fontsize=10, fontweight='bold')
+    
+    # Draw path with arrows
+    for i in range(len(path) - 1):
+        pos_current = path[i]
+        pos_next = path[i + 1]
+        arrow = FancyArrowPatch((pos_current[1], pos_current[0]), (pos_next[1], pos_next[0]),
+                               arrowstyle='->', color='blue', linewidth=2, mutation_scale=20, alpha=0.7)
+        ax1.add_patch(arrow)
+        
+        if i % 3 == 0:
+            mid_x = (pos_current[1] + pos_next[1]) / 2
+            mid_y = (pos_current[0] + pos_next[0]) / 2
+            ax1.text(mid_x, mid_y, str(i), bbox=dict(boxstyle='circle', facecolor='white', 
+                    edgecolor='blue', alpha=0.8), ha='center', va='center', fontsize=8)
+    
+    # Start and goal
+    ax1.add_patch(Rectangle((start[1]-0.5, start[0]-0.5), 1, 1, edgecolor='green', 
+                           facecolor='green', linewidth=3, alpha=0.5))
+    ax1.text(start[1], start[0], 'START', ha='center', va='center', fontsize=10, 
+            fontweight='bold', color='white')
+    ax1.add_patch(Rectangle((goal[1]-0.5, goal[0]-0.5), 1, 1, edgecolor='red', 
+                           facecolor='red', linewidth=3, alpha=0.5))
+    ax1.text(goal[1], goal[0], 'GOAL', ha='center', va='center', fontsize=10, 
+            fontweight='bold', color='white')
+    
+    ax1.set_xlim(-1, col)
+    ax1.set_ylim(-1, row)
+    ax1.set_aspect('equal')
+    ax1.invert_yaxis()
     ax1.set_xlabel('Column', fontsize=12)
     ax1.set_ylabel('Row', fontsize=12)
     ax1.grid(True, alpha=0.3)
-
+    
     # Legend
     legend_elements = [
         mpatches.Patch(facecolor='black', edgecolor='k', label='Obstacles'),
@@ -143,7 +162,8 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula,
         mpatches.Patch(facecolor=(0.7, 0.0, 0.0), edgecolor='gray', label='Weight: max'),
         mpatches.Patch(facecolor='green', edgecolor='green', label='Start', alpha=0.5),
         mpatches.Patch(facecolor='red', edgecolor='red', label='Goal', alpha=0.5),
-        mpatches.Patch(facecolor='blue', edgecolor='blue', label='Path', alpha=0.8)
+        mpatches.FancyArrowPatch((0, 0), (0.5, 0), arrowstyle='->', color='blue', 
+                                linewidth=2, label='Path', mutation_scale=20)
     ]
     ax1.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1), 
                fontsize=8, framealpha=0.9, borderaxespad=0)
@@ -151,26 +171,6 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula,
     # State timeline
     ax2.set_title('LTL State Progression Over Time', fontsize=14, fontweight='bold')
     
-    # Normalize state_trace: accept (pos, ltl_state, symbol), 4+ tuples (take first 3), or symbols-only (zip with path)
-    _trace = []
-    if state_trace and len(state_trace) > 0:
-        first = state_trace[0]
-        try:
-            n = len(first) if isinstance(first, (list, tuple)) else 1
-        except TypeError:
-            n = 1
-        if n >= 3:
-            for item in state_trace:
-                _trace.append((item[0], item[1], item[2]))
-        elif path and (n == 1 or not isinstance(first, (list, tuple))):
-            # Symbols-only list (e.g. from state_aware_astar's symbols_produced)
-            for i, sym in enumerate(state_trace):
-                pos = path[i] if i < len(path) else (0, 0)
-                _trace.append((pos, None, sym))
-        else:
-            _trace = [(item[0], item[1], item[2]) for item in state_trace if isinstance(item, (list, tuple)) and len(item) >= 3]
-    state_trace = _trace
-
     if state_trace and len(state_trace) > 0:
         states_seen = []
         state_changes = []
@@ -240,11 +240,8 @@ def visualize_ltl_aware_path(grid, start, goal, path, state_trace, ltl_formula,
                 ha='center', va='center', fontsize=14, transform=ax2.transAxes)
     
     plt.tight_layout()
-    plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"\n✓ Visualization saved to: {save_path}")
-    plt.close(fig)
-    # Return left-panel raster as (H, W, 3) uint8 for callers (e.g. Image.fromarray)
-    return (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
 
 
 if __name__ == '__main__':
