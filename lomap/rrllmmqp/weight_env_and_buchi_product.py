@@ -635,12 +635,25 @@ def  weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_stat
     # Put objects in dictionary with associated risk value
     risk_dict = {}
     for item in data:
-        for object in item['objects']:
-            if object not in risk_dict: 
-                risk_dict[object] = {'danger_score': item['danger_score'], 'embedding': None}
-            
-            else: 
-                risk_dict[object]['danger_score']  = item['danger_score'] + risk_dict[object]['danger_score'] # Sum the danger scores for each object, also may need to change...
+        # find the key that contains "interest"
+        interest_key = next(
+            (key for key in item.keys() if "interest" in key),
+            None
+        )
+
+        if interest_key is None:
+            continue  # skip if no such key
+
+        interest_val = item[interest_key]
+        objects = [interest_val] if isinstance(interest_val, str) else interest_val
+        for obj in objects:
+            if obj not in risk_dict:
+                risk_dict[obj] = {
+                    'danger_score': item['danger_score'],
+                    'embedding': None
+                }
+            else:
+                risk_dict[obj]['danger_score'] += item['danger_score']
 
     print(risk_dict)
 
