@@ -558,6 +558,30 @@ def extract_prop_from_label(label_string):
     
     return ''
 
+
+def is_empty_prop_label(label_string):
+    """Return True if a node label represents the empty proposition {}."""
+    if not label_string:
+        return True
+
+    try:
+        parsed = literal_eval(label_string)
+        prop_part = parsed[0] if isinstance(parsed, tuple) and parsed else parsed
+
+        if prop_part == '{}' or prop_part == set() or prop_part == {'{}'}:
+            return True
+
+        if isinstance(prop_part, set):
+            if not prop_part:
+                return True
+            cleaned = {str(x).strip() for x in prop_part}
+            return cleaned.issubset({'{}', ''})
+
+        return str(prop_part).strip() in {'{}', '', 'set()'}
+    except Exception:
+        extracted = str(extract_prop_from_label(label_string)).strip()
+        return extracted in {'{}', '', 'set()'}
+
 def weight_edges(pa, similarity_dict, risk_dict):
     import networkx as nx
     is_multigraph = isinstance(pa.g, (nx.MultiDiGraph, nx.MultiGraph))
@@ -840,7 +864,7 @@ def  weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_stat
     
     for f in iter(pa.final):
         # Check if final node has valid proposition
-        if labels.get(f) and literal_eval(labels.get(f))[0] != '{}':
+        if labels.get(f) and not is_empty_prop_label(labels.get(f)):
             trajectory, weight = weighted_shortest_path(pa.g, init_node, f)
             if trajectory:
                 # Truncate path at first accepting state encountered
@@ -877,12 +901,7 @@ def  weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_stat
                     shortest_trajectory = truncated_trajectory
                     shortest_weight = truncated_weight
 
-    shortest_trajectory = None
-    for f in iter(pa.final):
-        trajectory = nx.shortest_path(pa.g, source=next(iter(pa.init)), target=f)
-        if (not shortest_trajectory or len(trajectory) < len(shortest_trajectory)) and \
-        (literal_eval(labels.get(f))[0] != '{}'): # has !{} because can't run policy for {} so can't get to final node if {}
-            shortest_trajectory = trajectory
+    # Keep the weighted trajectory selected above; do not overwrite with unweighted shortest path.
 
     if shortest_trajectory:
         print('Shortest Weighted Trajectory (truncated at first accepting state): ', shortest_trajectory)
@@ -890,6 +909,12 @@ def  weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_stat
         if shortest_weight > 0.5 * 96:
             print("Shortest weight is too high, returning None")
             return None, None
+
+        # Drop initial empty-proposition node so A* does not detour to its cluster center.
+        first_label = labels.get(shortest_trajectory[0])
+        if first_label and is_empty_prop_label(first_label) and len(shortest_trajectory) > 1:
+            shortest_trajectory = shortest_trajectory[1:]
+
     print('Shortest Trajectory Node Labels: ', [labels.get(node) for node in shortest_trajectory])
 
     # Use the unique clusters to get the node cooridinates

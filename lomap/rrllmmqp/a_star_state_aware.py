@@ -213,13 +213,13 @@ def iterative_a_star(
     start_pos = start_node[0]
     start_hx = abs(goal[1] - start_pos[1]) + abs(goal[0] - start_pos[0])
     start_fx = gx_dict[start_node] + start_hx
-    entry = (start_fx, next(counter), start_node)
+    entry = (start_fx, start_hx, next(counter), start_node)
     heapq.heappush(heap, entry)
 
     while heap:
         steps += 1
 
-        _, _, node = heapq.heappop(heap)
+        _, _, _, node = heapq.heappop(heap)
         if node in visited:
             continue
         visited.add(node)
@@ -385,11 +385,14 @@ def four_connected_with_gx_check_state_restraint(
         if  gx < gx_dict.get(node_to_add, float("inf")):
             parent_dict[node_to_add] = node
             gx_dict[node_to_add] = gx
+            # Reopen this exact (position, LTL state) node if it was already closed.
+            if node_to_add in visited:
+                visited.remove(node_to_add)
             dx_goal = abs(goal[1] - new_col)
             dy_goal = abs(goal[0] - new_row)
             hx = dx_goal + dy_goal
             fx = gx + hx
-            heapq.heappush(heap, (fx, next(counter), node_to_add))
+            heapq.heappush(heap, (fx, hx, next(counter), node_to_add))
 
     return heap, parent_dict, gx_dict
 
@@ -495,11 +498,14 @@ def eight_connected_with_gx_check_state_restraint(
         if gx < gx_dict.get(node_to_add, float("inf")):
             parent_dict[node_to_add] = node
             gx_dict[node_to_add] = gx
+            # Reopen this exact (position, LTL state) node if it was already closed.
+            if node_to_add in visited:
+                visited.remove(node_to_add)
             dx_goal = abs(goal[1] - new_col)
             dy_goal = abs(goal[0] - new_row)
             hx = dx_goal + dy_goal
             fx = gx + hx
-            heapq.heappush(heap, (fx, next(counter), node_to_add))
+            heapq.heappush(heap, (fx, hx, next(counter), node_to_add))
 
     return heap, parent_dict, gx_dict
 
