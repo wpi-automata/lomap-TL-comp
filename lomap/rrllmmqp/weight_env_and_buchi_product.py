@@ -617,7 +617,7 @@ def weight_edges(pa, similarity_dict, risk_dict):
                 print(f"No similarity found for prop '{prop_string}'")
     return pa, label_weights
 
-def weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state, visualize=True): #TODO: Clean this up to look like a method and not main
+def  weight_env_and_buchi_product(ltl_spec, json_file_path, map_path, start_state, visualize=True): #TODO: Clean this up to look like a method and not main
     # Get sample paranoia data 
     if json_file_path is None:
         # Try to find paranoia.json relative to this script
