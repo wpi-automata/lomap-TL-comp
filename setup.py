@@ -42,7 +42,7 @@ setup(
     license='GNU GPLv2',
     packages=['lomap', 'lomap.algorithms', 'lomap.classes'],
     package_dir={'lomap': 'lomap'},
-    install_requires=['networkx >= 1.11', 'pp >= 1.6.2', 'matplotlib >= 1.3.1',
+    install_requires=['networkx >= 1.11', 'matplotlib >= 1.3.1',
                       'setuptools >= 1.1.6'],
     zip_safe=False
 )
