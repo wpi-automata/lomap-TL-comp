@@ -17,7 +17,9 @@
 
 from setuptools import setup
 
-version = '0.1.2'
+__version__ = (0, 1, 2)
+
+version = '.'.join(map(str, (__version__)))
 
 setup(
     name='lomap',
