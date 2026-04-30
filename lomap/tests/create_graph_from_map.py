@@ -90,7 +90,7 @@ def connected(a, b):
     return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2) == 1.
 
 
-def draw_graph(nx_graph, labels=None, use_pi=True, use_weight=False):
+def draw_graph(nx_graph, labels=None, use_pi=True, use_weight=False, save_path=None):
 
     pos = nx.nx_agraph.graphviz_layout(nx_graph, prog="neato")
     fig, ax = plt.subplots()
@@ -117,8 +117,12 @@ def draw_graph(nx_graph, labels=None, use_pi=True, use_weight=False):
             edge_labels[key] = str(
                 f"{edge_labels_w.get(key)}, {edge_labels_r.get(key)}")
         add_edge_labels(nx_graph, pos, ax, edge_labels, curved_edges, straight_edges, arc_rad)
-
-    plt.show()
+        
+    if save_path:
+        fig.savefig(save_path)
+        plt.close(fig)
+    else:
+        plt.show()
 
 def add_edge_labels(nx_graph, pos, ax, edge_labels, curved_edges, straight_edges, arc_rad):
         # if not edge_labels:
