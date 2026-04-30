@@ -17,9 +17,9 @@
 
 from setuptools import setup
 
-import lomap
+__version__ = (0, 1, 2)
 
-version = '.'.join(map(str, lomap.__version__))
+version = '.'.join(map(str, (__version__)))
 
 setup(
     name='lomap',
