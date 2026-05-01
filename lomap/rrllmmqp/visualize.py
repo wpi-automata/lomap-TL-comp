@@ -320,3 +320,164 @@ def visualize_path_simple(occupancy_grid, symbol_grid, weights, path, start=None
     plt.show()
     
     return fig
+
+import matplotlib.pyplot as plt
+import numpy as np
+import csv
+import matplotlib.cm as cm
+
+OBS_THRESHOLD = 80
+
+def load_path_from_csv(csv_file):
+    """
+    Assumes CSV format: row,col per line
+    """
+    path = []
+    with open(csv_file, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                path.append([int(row[0]), int(row[1])])
+    return path
+
+
+def visualize_multiple_paths_from_csv(
+    occupancy_grid,
+    symbol_grid,
+    weights,
+    csv_paths,          # list of csv file paths
+    labels=None,        # list of names for legend
+    start=None,
+    goal=None,
+    title="Method Comparison: F Storage Closet",
+    save_path=None,
+    figsize=(12, 10)
+):
+    og = np.array(occupancy_grid)
+    sg = np.array(symbol_grid, dtype=object)
+
+    rows, cols = og.shape
+
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+    # === Base Map (same as your left plot) ===
+    base_image = np.ones((rows, cols, 3))
+
+    # Obstacles
+    obstacles = og > OBS_THRESHOLD
+    base_image[obstacles] = [0, 0, 0]
+
+    # === Label coloring (same logic) ===
+    unique_symbols = set()
+    for i in range(rows):
+        for j in range(cols):
+            if not obstacles[i, j]:
+                symbol = str(sg[i, j]).strip()
+                if symbol and symbol not in ['{}', '-1', '']:
+                    unique_symbols.add(symbol)
+
+    symbol_colors = {}
+    if unique_symbols:
+        cmap = cm.get_cmap('tab20')
+        for idx, symbol in enumerate(sorted(unique_symbols)):
+            symbol_colors[symbol] = cmap(idx % 20)[:3]
+
+    for i in range(rows):
+        for j in range(cols):
+            if not obstacles[i, j]:
+                symbol = str(sg[i, j]).strip()
+                if symbol in symbol_colors:
+                    base_image[i, j] = symbol_colors[symbol]
+
+    # === Weight overlay ===
+    if weights:
+        if isinstance(weights, dict):
+            weight_array = np.zeros((rows, cols))
+            for (r, c), w in weights.items():
+                if 0 <= r < rows and 0 <= c < cols:
+                    weight_array[r, c] = w
+        else:
+            weight_array = np.array(weights)
+
+        if weight_array.max() > weight_array.min():
+            norm = (weight_array - weight_array.min()) / (weight_array.max() - weight_array.min())
+        else:
+            norm = np.zeros_like(weight_array)
+
+        overlay = np.zeros((rows, cols, 3))
+        overlay[:, :, 0] = norm
+        overlay[:, :, 1] = norm * 0.3
+        overlay[:, :, 2] = norm * 0.1
+
+        base_image = 0.7 * base_image + 0.3 * overlay
+
+    ax.imshow(base_image, origin='lower', interpolation='nearest')
+
+    # === Load all paths ===
+    paths = [load_path_from_csv(p) for p in csv_paths]
+
+    # === Colors for each path ===
+    cmap = cm.get_cmap('tab10')
+    colors = [cmap(i % 10) for i in range(len(paths))]
+
+    # === Labels fallback ===
+    if labels is None:
+        labels = [f"Path {i+1}" for i in range(len(paths))]
+
+   # === Plot each path ===
+    for idx, path in enumerate(paths):
+        label = labels[idx]
+
+        if not path or len(path) == 0:
+            # Add legend entry for missing path
+            ax.plot(
+                [], [],  # no data
+                linestyle='--',
+                color='gray',
+                linewidth=2,
+                label=f"{label} (no path)"
+            )
+            continue
+
+        path_array = np.array(path)
+        rows_p = path_array[:, 0]
+        cols_p = path_array[:, 1]
+
+        ax.plot(
+            cols_p,
+            rows_p,
+            linewidth=3.5,
+            alpha=0.95,
+            color=colors[idx],
+            label=label,
+            zorder=5,
+            solid_capstyle='round',
+            solid_joinstyle='round'
+        )
+
+    # === Start / Goal ===
+    if start is not None:
+        ax.scatter(start[1], start[0], c='#2A9D8F', s=60,
+                   edgecolors='black', label='Start', zorder=6)
+
+    if goal is not None:
+        ax.scatter(goal[1], goal[0], c='#457B9D', s=60,
+                   edgecolors='black', label='Goal', zorder=6)
+
+    # === Formatting ===
+    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel('Column (X)')
+    ax.set_ylabel('Row (Y)')
+    ax.grid(True, alpha=0.3)
+
+    ax.legend(loc='upper right')
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+
+    plt.show()
+
+    return fig
