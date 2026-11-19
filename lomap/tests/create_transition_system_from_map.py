@@ -316,9 +316,9 @@ def create_ts(map_path = "maps/alphabetical_maps/map_multiple_alpha_symbols_comp
     clean_clusters(clusters)
     # print(f"Clusters: {clusters}")
     unique_clusters = each_cluster_uuid(clusters)
-    # print(f"Unique Clusters: {unique_clusters}")
+    print(f"Unique Clusters: {unique_clusters}")
     edges = create_graph(unique_clusters)
-    # print(f"Edges: {edges}")
+    print(f"Edges: {edges}")
     reversed_edges = [sublist[::-1] for sublist in edges[::-1]]
     # print(f"Reversed Edges: {reversed_edges}")
     edges.extend(reversed_edges)        
@@ -420,4 +420,4 @@ class TestTSCreation(unittest.TestCase):
 if __name__ == '__main__':
     # unittest.main()
     # ts, _ = create_ts('maps/alphabetical_maps/office_world.csv')
-    ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example7.csv', prune=True)
+    ts, _ = create_ts('maps/unit_test_maps/alphabetical_maps/example1.csv', prune=True)

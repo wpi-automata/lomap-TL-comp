@@ -169,7 +169,7 @@ class Model(object):
         for state, next_state in zip(trajectory, trajectory[1:]):
             goal_symbol = literal_eval(labels.get(next_state))[0]
             if goal_symbol != '{}':
-                policy_symbols = self.g[state][next_state]['pi']
+                policy_symbols = self.g[state][next_state]['pi'][0]
                 policies_and_goal={
                     'policy': policy_symbols,
                     'goal': goal_symbol
@@ -186,7 +186,7 @@ class Model(object):
                 pg['policy'] = intersection[0]
                 next_pg['policy'] = intersection[0]
             else:
-                pg['policy'] = pg['policy'][0]
-                next_pg['policy'] = next_pg['policy'][0]
+                pg['policy'] = pg['policy']
+                next_pg['policy'] = next_pg['policy']
 
         return policies_and_goals

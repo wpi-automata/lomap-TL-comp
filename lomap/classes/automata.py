@@ -117,8 +117,9 @@ Edges: {edges}
                            "self.symbols_w_prop('{}')".format(key),
                            guard)
 
-        # Handle (1)
+        # Handle (1) and (true)
         guard = re.sub(r'\(1\)', 'self.alphabet', guard)
+        guard = re.sub(r'\(true\)', 'self.alphabet', guard)
         # Handle (0)
         guard = re.sub(r'\(0\)', 'set()', guard)
 
@@ -130,7 +131,11 @@ Edges: {edges}
         guard = re.sub(r'\&\&', '&', guard)
         guard = re.sub(r'\|\|', '|', guard)
 
-        return eval(guard)
+        # guard = str(guard).replace("(", "").replace(")", "")
+
+        e = eval(guard)
+
+        return e
 
     def guard_from_bitmaps(self, bitmaps):
         """
