@@ -19,7 +19,7 @@ Linux (Ubuntu)
   * Run the following line in shell:
 
   ```bash
-  git clone https://github.com/wasserfeder/lomap.git
+  git clone git@github.com/wpi-automata/lomap-TL-comp.git
   ```
 
 2. Install _Spot_ using Debian Packages (https://spot.lrde.epita.fr/install.html)
@@ -64,7 +64,7 @@ Linux (Ubuntu)
       ```bash
       mkdir build
       cd build/
-      cmake -DCMAKE_BUILD_TYPE=Release ../src
+      cmake -DCMAKE_BUILD_TYPE=3.14.0 ../src
       make
       ```
 
